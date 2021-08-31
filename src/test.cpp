@@ -36,6 +36,7 @@ int main(int argc, char ** argv)
         mc.nextStep();
         cout<<"Time present: "<<mc.timePresent<<"; leg stance flag: "<<mc.stanceFlag.transpose()
         <<"; CoM position: "<<mc.targetCoMPosition.transpose()<<endl;
+        cout<<"foot cmd: "<<mc.legCmdPos<<endl;
     }
     // Matrix<float, 2, 2> ta;
     // ta<<1,2,3,4;

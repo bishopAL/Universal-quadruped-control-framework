@@ -44,16 +44,24 @@ void MotionControl::nextStep()
                 stancePhaseStartPos(legNum) = legCmdPos(legNum);
             if(abs(timePresent - timeForStancePhase.row(legNum)(1)) < 1e-4)  // if on the end pos
                 stancePhaseEndPos(legNum) = legCmdPos(legNum);
-
-            
-
-
-            // targetCoMPosition = delta_alpha * targetCoMPosition + 
+            Matrix<float, 3, 3> trans;
+            trans<<cos(targetCoMPosition(2)), -sin(targetCoMPosition(2)), targetCoMPosition(0),
+                   sin(targetCoMPosition(2)), cos(targetCoMPosition(2)), targetCoMPosition(1),
+                   0, 0, 1;
+            Matrix<float, 3, 1> oneShoulderPos_3x1;
+            oneShoulderPos_3x1<<shoulderPos.row(legNum)(0), shoulderPos.row(legNum)(1), 1;
+            oneShoulderPos_3x1 = trans * oneShoulderPos_3x1;
+            legCmdPos(legNum, 0) = stancePhaseStartPos(legNum, 0) + (shoulderPos(legNum, 0) - oneShoulderPos_3x1(0));
+            legCmdPos(legNum, 1) = stancePhaseStartPos(legNum, 1) + (shoulderPos(legNum, 1) - oneShoulderPos_3x1(1));
             stanceFlag(legNum) = true;
 
         }
         else
         {
+            Matrix<float, 1, 3> swingPhaseVelocity = (stancePhaseEndPos.row(legNum) - stancePhaseStartPos.row(legNum)) / 
+                                        (timeForGaitPeriod - (timeForStancePhase(legNum,1) - timeForStancePhase(legNum,0)));
+            for(int pos=0; pos<3; pos++)
+            legCmdPos(legNum, pos) = legCmdPos(legNum, pos) + swingPhaseVelocity(pos) * timePeriod;
             stanceFlag(legNum) = false;
         }
     }
