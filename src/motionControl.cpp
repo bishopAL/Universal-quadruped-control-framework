@@ -24,7 +24,10 @@ void MotionControl::setInitPos(Matrix<float, 4, 3> initPosition)
     stancePhaseEndPos = initPosition;
     legPresentPos = initPosition;
     legCmdPos = initPosition;
-    targetCoMPosition << 0.0, 0.0, 0.0;
+    targetCoMPosition << 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0;
 }
 
 void MotionControl::setCoMVel(Vector<float, 3> tCV)
@@ -34,43 +37,62 @@ void MotionControl::setCoMVel(Vector<float, 3> tCV)
 
 void MotionControl::nextStep()
 {
-    targetCoMPosition += targetCoMVelocity * timePeriod;
-
     for(uint8_t legNum=0; legNum<4; legNum++)  // run all 4 legs
     {
         if(timePresent > timeForStancePhase.row(legNum)(0)-timePeriod/2 && timePresent < timeForStancePhase.row(legNum)(1)+timePeriod/2 )
         {     // check timePresent is in stance phase or swing phase, -timePeriod/2 is make sure the equation is suitable
             if(abs(timePresent - timeForStancePhase.row(legNum)(0)) < 1e-4)  // if on the start pos 
+            {
                 stancePhaseStartPos(legNum) = legCmdPos(legNum);
-            if(abs(timePresent - timeForStancePhase.row(legNum)(1)) < 1e-4)  // if on the end pos
-                stancePhaseEndPos(legNum) = legCmdPos(legNum);
+                for(uint8_t pos; pos<3; pos++)
+                targetCoMPosition(legNum, pos) = 0.0;
+            }
             Matrix<float, 3, 3> trans;
-            trans<<cos(targetCoMPosition(2)), -sin(targetCoMPosition(2)), targetCoMPosition(0),
-                   sin(targetCoMPosition(2)), cos(targetCoMPosition(2)), targetCoMPosition(1),
+            trans<<cos(targetCoMPosition(legNum,2)), -sin(targetCoMPosition(legNum,2)), targetCoMPosition(legNum,0),
+                   sin(targetCoMPosition(legNum,2)), cos(targetCoMPosition(legNum,2)), targetCoMPosition(legNum,1),
                    0, 0, 1;
             Matrix<float, 3, 1> oneShoulderPos_3x1;
             oneShoulderPos_3x1<<shoulderPos.row(legNum)(0), shoulderPos.row(legNum)(1), 1;
             oneShoulderPos_3x1 = trans * oneShoulderPos_3x1;
+
+            if(abs(timePresent - timeForStancePhase.row(legNum)(0)) < 1e-4)  // if on the start pos 
+            {
+                stancePhaseStartPos(legNum) = legCmdPos(legNum);
+                shoulderPos(legNum, 0) = oneShoulderPos_3x1(0);
+                shoulderPos(legNum, 1) = oneShoulderPos_3x1(1);
+            }
+            if(abs(timePresent - timeForStancePhase.row(legNum)(1)) < 1e-4)  // if on the end pos
+                stancePhaseEndPos(legNum) = legCmdPos(legNum);
+
             legCmdPos(legNum, 0) = stancePhaseStartPos(legNum, 0) + (shoulderPos(legNum, 0) - oneShoulderPos_3x1(0));
             legCmdPos(legNum, 1) = stancePhaseStartPos(legNum, 1) + (shoulderPos(legNum, 1) - oneShoulderPos_3x1(1));
             stanceFlag(legNum) = true;
 
+            
+            
         }
         else
         {
             Matrix<float, 1, 3> swingPhaseVelocity = (stancePhaseEndPos.row(legNum) - stancePhaseStartPos.row(legNum)) / 
-                                        (timeForGaitPeriod - (timeForStancePhase(legNum,1) - timeForStancePhase(legNum,0)));
-            for(int pos=0; pos<3; pos++)
-            legCmdPos(legNum, pos) = legCmdPos(legNum, pos) + swingPhaseVelocity(pos) * timePeriod;
+                                        (timeForGaitPeriod - (timeForStancePhase(legNum,1) - timeForStancePhase(legNum,0)) - timePeriod);
+            
+            for(uint8_t pos; pos<3; pos++)
+            legCmdPos(legNum, pos) = legCmdPos(legNum, pos) - swingPhaseVelocity(pos) * timePeriod;
             stanceFlag(legNum) = false;
         }
     }
 
     timePresent += timePeriod;
+    for(uint8_t leg; leg<4; leg++)
+    {
+        for(uint8_t pos; pos<3; pos++)
+        {
+            targetCoMPosition(leg, pos) += targetCoMVelocity(pos) * timePeriod;
+        }
+    }
+    
     if (abs(timePresent - timeForGaitPeriod - timePeriod) < 1e-4)  // check if present time has reach the gait period                                                               
     {                                                            // if so, set it to 0.0
         timePresent = 0.0;
-        for(int times=0; times<3; times++)
-        targetCoMPosition(times) = 0.0;
     }
 }

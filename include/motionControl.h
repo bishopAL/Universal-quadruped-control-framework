@@ -23,16 +23,16 @@ class MotionControl
         float timePeriod;  // The time of one period
         float timePresent;
         Matrix<float, 4, 2> timeForStancePhase;  // startTime, endTime: LF, RF, LH, RH
-        Vector<float, 3> targetCoMVelocity;  // X, Y , alpha in world cordinate
-        Vector<float, 3> targetCoMPosition;  // X, Y , alpha in world cordinate
+        Vector<float, 3> targetCoMVelocity;  // X, Y , alpha c in world cordinate
+        Matrix<float, 4, 3> targetCoMPosition;  // X, Y , alpha in world cordinate
         Vector<bool, 4> stanceFlag;  // True, False: LF, RF, LH, RH
         float L1, L2, L3;  // The length of L
         float width, length;
         Matrix<float, 4, 2> shoulderPos;  // X-Y: LF, RF, LH, RH
         Matrix<float, 4, 3> stancePhaseStartPos;
         Matrix<float, 4, 3> stancePhaseEndPos;
-        Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH
-        Matrix<float, 4, 3> legCmdPos;  // command X-Y-Z: LF, RF, LH, RH
+        Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
+        Matrix<float, 4, 3> legCmdPos;  // command X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Matrix<float, 4, 3> jointPresentPos;  // present motor 0-11
         Matrix<float, 4, 3> jointCmdPos;  // command motor 0-11
         void setInitPos(Matrix<float, 4, 3> initPosition);

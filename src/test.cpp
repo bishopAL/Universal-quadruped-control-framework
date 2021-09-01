@@ -31,12 +31,17 @@ int main(int argc, char ** argv)
 	mc.setInitPos(initPos);
     cout<<"initPos vel"<<endl;
 	mc.setCoMVel(tCV);
-    for(int times=0; times<100; times++)
+    for(int times=0; times<50; times++)
     {
         mc.nextStep();
         cout<<"Time present: "<<mc.timePresent<<"; leg stance flag: "<<mc.stanceFlag.transpose()
         <<"; CoM position: "<<mc.targetCoMPosition.transpose()<<endl;
-        cout<<"foot cmd: "<<mc.legCmdPos<<endl;
+        cout<<"shoulder pos: "<<endl;
+        cout<<mc.shoulderPos<<endl;
+        cout<<"End pos: "<<endl;
+        cout<<mc.stancePhaseEndPos<<endl;
+        cout<<"foot cmd: "<<endl;
+        cout<<mc.legCmdPos<<endl;
     }
     // Matrix<float, 2, 2> ta;
     // ta<<1,2,3,4;
