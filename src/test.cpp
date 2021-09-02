@@ -31,7 +31,7 @@ int main(int argc, char ** argv)
 	mc.setInitPos(initPos);
     cout<<"initPos vel"<<endl;
 	mc.setCoMVel(tCV);
-    for(int times=0; times<50; times++)
+    for(int times=0; times<100; times++)
     {
         mc.nextStep();
         cout<<"Time present: "<<mc.timePresent<<"; leg stance flag: "<<mc.stanceFlag.transpose()
