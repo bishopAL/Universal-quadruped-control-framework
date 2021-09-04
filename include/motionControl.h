@@ -35,10 +35,11 @@ class MotionControl
         Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Matrix<float, 4, 3> legCmdPos;  // command X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Matrix<float, 4, 3> jointPresentPos;  // present motor 0-11
-        Matrix<float, 4, 3> jointCmdPos;  // command motor 0-11
+        float jointCmdPos[12];  // command motor 0-11
         void setInitPos(Matrix<float, 4, 3> initPosition);
         void setCoMVel(Vector<float, 3> tCV);
         void nextStep();
+        void inverseKinematics();
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
 
 };

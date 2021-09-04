@@ -1,5 +1,5 @@
 #include <motionControl.h>
-
+#define PI 3.1415926
 using namespace std;
 using namespace Eigen;
 
@@ -11,9 +11,9 @@ MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
     timePresent = 0.0;
     timePresentForSwing << 0.0, 0.0, 0.0, 0.0;
     targetCoMVelocity << 0.0, 0.0, 0.0;
-    L1 = 100;
-    L2 = 100;
-    L3 = 0;
+    L1 = 132.0;
+    L2 = 138.0;
+    L3 = 0.0;
     width = 132.0;
     length = 172.0;  
     shoulderPos << width/2, length/2, width/2, -length/2, -width/2, length/2, -width/2, -length/2;  // X-Y: LF, RF, LH, RH
@@ -76,6 +76,11 @@ void MotionControl::nextStep()
             
             for(uint8_t pos=0; pos<3; pos++)
             legCmdPos(legNum, pos) = legCmdPos(legNum, pos) - swingPhaseVelocity(pos) * timePeriod;
+            
+            if( ( timePresentForSwing(legNum) - (timeForGaitPeriod - (timeForStancePhase(legNum,1) - timeForStancePhase(legNum,0)))/2 ) > 1e-4)
+            legCmdPos(legNum, 2) -= 3.0;
+            if( ( timePresentForSwing(legNum) - (timeForGaitPeriod - (timeForStancePhase(legNum,1) - timeForStancePhase(legNum,0)))/2 ) < -1e-4 && timePresentForSwing(legNum) > 1e-4)
+            legCmdPos(legNum, 2) += 3.0;
             stanceFlag(legNum) = false;
         }
     }
@@ -96,4 +101,47 @@ void MotionControl::nextStep()
     {                                                            // if so, set it to 0.0
         timePresent = 0.0;
     }
+}
+
+void MotionControl::inverseKinematics()
+{
+    float theta[4][3] = {0};
+    float jo_ang[4][3] = {0};
+    float a1[4] = {0};
+    float b1[4] = {0};
+    float c1[4] = {0};
+    float a2[4] = {0};
+    float b2[4] = {0};
+    float c2[4] = {0};
+
+    for(int leg_num = 0; leg_num < 4; leg_num++)
+    {
+        a1[leg_num] = - legCmdPos(leg_num,2);
+        b1[leg_num] = - legCmdPos(leg_num,1);
+        c1[leg_num] = 0;
+        theta[leg_num][0] = asin((c1[leg_num])/sqrt((a1[leg_num])*(a1[leg_num]) + (b1[leg_num])*(b1[leg_num]))) - atan(b1[leg_num]/a1[leg_num]);
+        jo_ang[leg_num][0] = theta[leg_num][0];
+        theta[leg_num][2] = acos(((- legCmdPos(leg_num,2) * cos(theta[leg_num][0]) + legCmdPos(leg_num,1) * sin(theta[leg_num][0]))*
+                        (- legCmdPos(leg_num,2) * cos(theta[leg_num][0]) + legCmdPos(leg_num,1) * sin(theta[leg_num][0])) + 
+                        legCmdPos(leg_num,0)*legCmdPos(leg_num,0) - L1*L1 - L2*L2)/(2*L1*L2));
+        jo_ang[leg_num][2] = theta[leg_num][2] - PI / 3;
+        a2[leg_num] = -(- legCmdPos(leg_num,2)) * cos(theta[leg_num][0]) - (legCmdPos(leg_num,1)) * sin(theta[leg_num][0]);
+        b2[leg_num] = legCmdPos(leg_num,0);
+        c2[leg_num] = L2 * sin(theta[leg_num][2]);
+        theta[leg_num][1] = asin((-c2[leg_num])/sqrt((a2[leg_num])*(a2[leg_num]) + (b2[leg_num])*(b2[leg_num]))) - atan(b2[leg_num]/a2[leg_num]);
+        jo_ang[leg_num][1] = -(theta[leg_num][1] + PI / 6);
+    }
+    
+    jointCmdPos[0] =  0.7864 - jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[1] =  0.4227 + jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[2] = -0.2618-jo_ang[0][2];
+    jointCmdPos[3] = 0.1343 - jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[4] = 0.2033 + jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[5] = 0.2618 + jo_ang[1][2];
+    jointCmdPos[6] = -1.3418 + jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[7] = 0.5669 - jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[8] = 0.2618+jo_ang[3][2];
+    jointCmdPos[9] = -1.3203 + jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[10] = -0.7879 - jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[11] = -0.2618-jo_ang[2][2];
 }
