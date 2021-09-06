@@ -24,6 +24,7 @@ class MotionControl
         float timePresent;
         Matrix<float, 4, 2> timeForStancePhase;  // startTime, endTime: LF, RF, LH, RH
         Vector<float, 3> targetCoMVelocity;  // X, Y , alpha c in world cordinate
+        Vector<float, 3> presentCoMVelocity;  // X, Y , alpha c in world cordinate
         Matrix<float, 4, 3> targetCoMPosition;  // X, Y , alpha in world cordinate
         Vector<bool, 4> stanceFlag;  // True, False: LF, RF, LH, RH
         Vector<float, 4> timePresentForSwing;
@@ -40,6 +41,7 @@ class MotionControl
         void setCoMVel(Vector<float, 3> tCV);
         void nextStep();
         void inverseKinematics();
+        void updateState();
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
 
 };

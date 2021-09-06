@@ -145,3 +145,8 @@ void MotionControl::inverseKinematics()
     jointCmdPos[10] = -0.7879 - jo_ang[2][0] - jo_ang[2][1];
     jointCmdPos[11] = -0.2618-jo_ang[2][2];
 }
+
+void MotionControl::updateState()
+{
+    
+}
