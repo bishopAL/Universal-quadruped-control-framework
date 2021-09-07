@@ -19,6 +19,8 @@ struct timeval startTime1, endTime1;
 
 int main(int argc, char ** argv)
 {
+    // thread_init();
+    
     // Motion control init start
 	Matrix<float, 4, 2> timeForStancePhase;
     float timePeriod = 0.01;
@@ -64,7 +66,7 @@ int main(int argc, char ** argv)
         // cout<<"."<<endl;
         gettimeofday(&endTime1,NULL);
         double timeUse1 = 1000000*(endTime1.tv_sec - startTime1.tv_sec) + endTime1.tv_usec - startTime1.tv_usec;
-        usleep(timePeriod*1e6 - (double)(timeUse1) - 10); // /* 1e4 / 1e6 = 0.01s */
+        usleep(timePeriod*1e6 - (double)(timeUse1) - 10); //  1e4 / 1e6 = 0.01s 
     }
     
     //cout<<timeUse1<<endl;

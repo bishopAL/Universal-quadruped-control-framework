@@ -124,29 +124,66 @@ void MotionControl::inverseKinematics()
         theta[leg_num][2] = acos(((- legCmdPos(leg_num,2) * cos(theta[leg_num][0]) + legCmdPos(leg_num,1) * sin(theta[leg_num][0]))*
                         (- legCmdPos(leg_num,2) * cos(theta[leg_num][0]) + legCmdPos(leg_num,1) * sin(theta[leg_num][0])) + 
                         legCmdPos(leg_num,0)*legCmdPos(leg_num,0) - L1*L1 - L2*L2)/(2*L1*L2));
-        jo_ang[leg_num][2] = theta[leg_num][2] - PI / 3;
+        //jo_ang[leg_num][2] = theta[leg_num][2] - PI / 3;
+        jo_ang[leg_num][2] = theta[leg_num][2];
         a2[leg_num] = -(- legCmdPos(leg_num,2)) * cos(theta[leg_num][0]) - (legCmdPos(leg_num,1)) * sin(theta[leg_num][0]);
         b2[leg_num] = legCmdPos(leg_num,0);
         c2[leg_num] = L2 * sin(theta[leg_num][2]);
         theta[leg_num][1] = asin((-c2[leg_num])/sqrt((a2[leg_num])*(a2[leg_num]) + (b2[leg_num])*(b2[leg_num]))) - atan(b2[leg_num]/a2[leg_num]);
-        jo_ang[leg_num][1] = -(theta[leg_num][1] + PI / 6);
+        //jo_ang[leg_num][1] = -(theta[leg_num][1] + PI / 6);
+        jo_ang[leg_num][1] = -theta[leg_num][1];
     }
-    
-    jointCmdPos[0] =  0.7864 - jo_ang[0][0] + jo_ang[0][1];
-    jointCmdPos[1] =  0.4227 + jo_ang[0][0] + jo_ang[0][1];
-    jointCmdPos[2] = -0.2618-jo_ang[0][2];
-    jointCmdPos[3] = 0.1343 - jo_ang[1][0] - jo_ang[1][1];
-    jointCmdPos[4] = 0.2033 + jo_ang[1][0] - jo_ang[1][1];
-    jointCmdPos[5] = 0.2618 + jo_ang[1][2];
-    jointCmdPos[6] = -1.3418 + jo_ang[3][0] - jo_ang[3][1];
-    jointCmdPos[7] = 0.5669 - jo_ang[3][0] - jo_ang[3][1];
-    jointCmdPos[8] = 0.2618+jo_ang[3][2];
-    jointCmdPos[9] = -1.3203 + jo_ang[2][0] - jo_ang[2][1];
-    jointCmdPos[10] = -0.7879 - jo_ang[2][0] - jo_ang[2][1];
-    jointCmdPos[11] = -0.2618-jo_ang[2][2];
+
+    jointCmdPos[0] =  -1.3315 - jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[1] =  1.4788 + jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[2] = 0.7854 - jo_ang[0][2];
+    jointCmdPos[3] = 0.5292 - jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[4] = 0.7670 + jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[5] = -0.7854 + jo_ang[1][2];
+    jointCmdPos[6] = 1.7058 + jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[7] = -0.3421 - jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[8] = -0.7854 + jo_ang[3][2];
+    jointCmdPos[9] = 0.2770 + jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[10] = -0.2954 - jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[11] = 0.7854 - jo_ang[2][2];
 }
 
 void MotionControl::updateState()
+{
+    
+}
+
+
+void MotionControl::setInitial()
+{
+    // float jo_pos[12] = {0.0};
+    // float ap,bt,gm;
+    // float T_cal = 0.00;
+
+    // for(int item = 0; item < 200; item++)
+    // {
+    //     ap = 0.0;
+    //     bt = (PI/6) / T_cycle * T_cal;
+    //     gm = (PI/3) / T_cycle * T_cal;
+    //     T_cal = T_cal + timePeriod;
+    // }
+    
+    // jointCmdPos[0] =  -1.3315 - ap + bt;
+    // jointCmdPos[1] =  1.4788 + ap + bt;
+    // jointCmdPos[2] = 0.7854 - gm;
+    // jointCmdPos[3] = 0.5292 - ap - bt;
+    // jointCmdPos[4] = 0.7670 + ap - bt;
+    // jointCmdPos[5] = -0.7854 + gm;
+    // jointCmdPos[6] = 1.7058 + ap - bt;
+    // jointCmdPos[7] = -0.3421 - ap - bt;
+    // jointCmdPos[8] = -0.7854 + gm;
+    // jointCmdPos[9] = 0.2770 + ap - bt;
+    // jointCmdPos[10] = -0.2954 - ap - bt;
+    // jointCmdPos[11] = 0.7854 - gm;
+}
+
+
+void MotionControl::creepingGait()
 {
     
 }

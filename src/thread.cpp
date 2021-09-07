@@ -13,27 +13,41 @@
 #include <CppLinuxSerial/SerialPort.hpp>
 #include <motionControl.h>
 #include <Eigen/Core>
+#include <js.h>
+#define _JOYSTICK 1
 
 using namespace std;
 
 struct timeval startTime, endTime;
 float loopRate1 = 10; //receive velocity data 10 Hz
-float loopRate2 = 10; // send velocity & IMU data 10 Hz
+float loopRate2 = 100; // send velocity & IMU data 10 Hz
 float loopRate3 = 100; // update robot state 100 Hz
-float loopRate4 = 100; // motion control 100 Hz
+float loopRate4 = 200; // motion control 100 Hz
 
 vector<float> present_position;
 vector<float> present_velocity;
 vector<int> present_torque;
 float target_com_velocity[3];
 float present_com_velocity[3];
-float target_position[12] = {0.702565, 0.446389, -0.493943,
-                          -0.909653, -0.949536, 0.518487, 
-                           -1.2548, 0.702565, 0.36202,
-                           -1.21031, -0.779264, 0.406506};
+
+float timePeriod = 0.01;
+float timeForGaitPeriod = 0.49;
+Matrix<float, 4, 2> timeForStancePhase;
+// timeForStancePhase<<0, 0.24, 0.25, 0.49, 0.25, 0.49, 0, 0.24;
+// MotionControl mc(timePeriod, timeForGaitPeriod, timeForStancePhase); // time
 
 void *thread1_func(void *data) // receive velocity data
 {
+    struct timeval startTime1, endTime1;
+
+    #ifdef _JOYSTICK
+    int xbox_fd ;
+    xbox_map_t map;
+    int len, type;
+    int axis_value, button_value;
+    int number_of_axis, number_of_buttons ;
+    memset(&map, 0, sizeof(xbox_map_t));
+    xbox_fd = xbox_open("/dev/input/js0");
     // SerialPort serialPort("/dev/ttyUSB0", BaudRate::B_57600);
 	// // Use SerialPort serialPort("/dev/ttyACM0", 13000); instead if you want to provide a custom baud rate
 	// serialPort.SetTimeout(100); // Block when reading until any data is received
@@ -41,52 +55,38 @@ void *thread1_func(void *data) // receive velocity data
     // string endFlag = "E";
     while(1)
     {
-        vector<string> vecPosStr;
-        string temp = "";
-        string readData;
-        gettimeofday(&startTime,NULL);
-        /*
-        YOUR CODE HERE
-        */
-        // while(1) // in some cases, temp can't receive all the serial data in one time, so the endFlag is needed. The serial data will increase until the endFlag is received.
-		// {
-		// 	serialPort.Read(readData);
-		// 	temp += readData;
-		// 	std::string tempFlag;
-		// 	if(temp.size()>=3) // if *temp* is not in right fomulation, the size should be less
-		// 	{
-		// 		tempFlag = temp.substr(temp.size()-3, 1);
-		// 		// cout<<"detect the end flag: "<< tempFlag << endl;
-		// 	}
-		// 	if ( tempFlag == endFlag) // break until the endFlag is received.
-		// 	{
-		// 		std::string strPos = temp.substr(1, temp.size()-4);
-		// 		vecPosStr = split(strPos, ",");
-		// 		for(int j=0; j<vecPosStr.size(); j++)
-		// 		{
-		// 			target_com_velocity[j] = atof(vecPosStr[j].c_str());
-		// 		}
-		// 		cout<< "Pos0: "<< target_com_velocity[0] << ", Pos1: "<< target_com_velocity[1] << ", Pos2: "<< target_com_velocity[2] << endl;
-		// 		break;
-		// 	}
-			
-		// }
-        gettimeofday(&endTime,NULL);
-        double timeUse = 1000000*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
-        usleep(1/loopRate1*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
+        gettimeofday(&startTime1,NULL);
+        len = xbox_map_read(xbox_fd, &map);
+        if (len < 0)
+        {
+            usleep(10*1000);
+            continue;
+        }
+        if (map.lx==0) map.lx = 1;
+        float theta = float(atan2(-map.ly, map.lx)) / 100.0;
+        float vel = sqrt(map.lx*map.lx+map.ly*map.ly) / 200.0;
+        cout<<vel<<", "<<theta<<endl;
+        gettimeofday(&endTime1,NULL);
+        double timeUse = 1000000*(endTime1.tv_sec - startTime1.tv_sec) + endTime1.tv_usec - startTime1.tv_usec;
+        fflush(stdout);
+        // cout<<"thread1: "<<timeUse<<endl;
+        // usleep(1/loopRate1*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
+    #endif
 }
 
 void *thread2_func(void *data) // send velocity & IMU data
 {
+    struct timeval startTime2, endTime2;
     while(1)
     {
-        gettimeofday(&startTime,NULL);
+        gettimeofday(&startTime2,NULL);
         /*
         YOUR CODE HERE
         */
-        gettimeofday(&endTime,NULL);
-        double timeUse = 1000000*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
+        gettimeofday(&endTime2,NULL);
+        double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
+        // cout<<"thread2: "<<timeUse<<endl;
         usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
 }
@@ -94,6 +94,7 @@ void *thread2_func(void *data) // send velocity & IMU data
 
 void *thread3_func(void *data) // update robot state
 {
+    struct timeval startTime3, endTime3;
     // const int num = 12;
     // int ID[num] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     // set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID, num);
@@ -103,7 +104,7 @@ void *thread3_func(void *data) // update robot state
 	// torque_enable();
     while(1)
     {
-        gettimeofday(&startTime,NULL);
+        gettimeofday(&startTime3,NULL);
         /*
         YOUR CODE HERE
         */
@@ -111,25 +112,26 @@ void *thread3_func(void *data) // update robot state
         // get_position(present_position);
 		// get_velocity(present_velocity);
 		// get_torque(present_torque);
-        gettimeofday(&endTime,NULL);
-        double timeUse = 1000000*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;  // us
-        cout<<"Time used: "<<timeUse<<", "<<present_position[0]<<", "<<present_velocity[0]<<", "<<present_torque[0]<<endl;
+        gettimeofday(&endTime3,NULL);
+        double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
+        // cout<<"thread3: "<<timeUse<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
     }
 }
 
 void *thread4_func(void *data) // motion control, update goal position
 {
-    
+    struct timeval startTime4, endTime4;
     while(1)
     {
-        gettimeofday(&startTime,NULL);
+        gettimeofday(&startTime4,NULL);
         /*
         YOUR CODE HERE
         */
         
-        gettimeofday(&endTime,NULL);
-        double timeUse = 1000000*(endTime.tv_sec - startTime.tv_sec) + endTime.tv_usec - startTime.tv_usec;
+        gettimeofday(&endTime4,NULL);
+        double timeUse = 1000000*(endTime4.tv_sec - startTime4.tv_sec) + endTime4.tv_usec - startTime4.tv_usec;
+        // cout<<"thread4: "<<timeUse<<endl;
         usleep(1/loopRate4*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
 }

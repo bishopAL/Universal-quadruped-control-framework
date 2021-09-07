@@ -41,7 +41,9 @@ class MotionControl
         void setCoMVel(Vector<float, 3> tCV);
         void nextStep();
         void inverseKinematics();
+        void setInitial();
         void updateState();
+        void creepingGait();   // the creeping gait from gecko_inspired
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
 
 };
