@@ -16,6 +16,10 @@
 #include <Eigen/Core>
 #include <js.h>
 #define _JOYSTICK 1
+#define THREAD1_ENABLE 1
+#define THREAD2_ENABLE 1
+#define THREAD3_ENABLE 1
+#define THREAD4_ENABLE 1
 
 using namespace std;
 
@@ -49,8 +53,12 @@ void *thread1_func(void *data) // receive velocity data
     int len, type;
     int axis_value, button_value;
     int number_of_axis, number_of_buttons ;
+    float vel = 0;
+    float theta = 0;
     memset(&map, 0, sizeof(xbox_map_t));
     xbox_fd = xbox_open("/dev/input/js0");
+    map.lt = -32767;
+    map.rt = -32767;
     while(1)
     {
         gettimeofday(&startTime1,NULL);
@@ -60,13 +68,13 @@ void *thread1_func(void *data) // receive velocity data
             usleep(10*1000);
             continue;
         }
-        if (map.lx==0) map.lx = 1;
-        float theta = float(atan2(-map.ly, map.lx)) / 100.0;
-        float vel = sqrt(map.lx*map.lx+map.ly*map.ly) / 300.0;
+        if (map.lx==0) theta = 0;
+        else theta = float(atan2(-map.ly, map.lx) - 3.1416/2) / 5.0;
+        vel = float(map.rt - map.lt) / 200.0;
         Vector<float, 3> tCV;
         tCV<<vel, 0.0, theta;
         mc.setCoMVel(tCV);
-        cout<<tCV<<endl;
+        cout<<tCV.transpose()<<", "<<-map.ly<<", "<<map.lx<<", "<<map.lt<<", "<<map.rt<<endl;
         gettimeofday(&endTime1,NULL);
         double timeUse = 1000000*(endTime1.tv_sec - startTime1.tv_sec) + endTime1.tv_usec - startTime1.tv_usec;
         fflush(stdout);
@@ -101,13 +109,6 @@ void *thread2_func(void *data) // send velocity & IMU data
 void *thread3_func(void *data) // update robot state
 {
     struct timeval startTime3, endTime3;
-    // const int num = 12;
-    // int ID[num] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    // set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID, num);
-	// dxl_init();
-	// set_P_I_D(400,10,10); //P,I,D
-	// set_operation_mode(3); //3 position control; 0 current control
-	// torque_enable();
     while(1)
     {
         gettimeofday(&startTime3,NULL);
@@ -211,48 +212,60 @@ void thread_init()
         }
  
     /*6. Create a pthread with specified attributes */
+        #ifdef THREAD1_ENABLE
         ret = pthread_create(&thread1, &attr, thread1_func, NULL);
         if (ret) {
                 printf("create pthread1 failed\n");
                 goto out;
         }
+        ret = pthread_join(thread1, NULL);
+        if (ret)
+            printf("join pthread1 failed: %m\n");
+        #endif
 
+        #ifdef THREAD2_ENABLE
         ret = pthread_create(&thread2, &attr, thread2_func, NULL);
         if (ret) {
                 printf("create pthread2 failed\n");
                 goto out;
         }
+        ret = pthread_join(thread2, NULL);
+        if (ret)
+            printf("join pthread2 failed: %m\n");
+        #endif
 
+        #ifdef THREAD3_ENABLE
         ret = pthread_create(&thread3, &attr, thread3_func, NULL);
         if (ret) {
                 printf("create pthread3 failed\n");
                 goto out;
         }
+        ret = pthread_join(thread3, NULL);
+        if (ret)
+            printf("join pthread4 failed: %m\n");
+        #endif
 
+        #ifdef THREAD4_ENABLE
         ret = pthread_create(&thread4, &attr, thread4_func, NULL);
         if (ret) {
                 printf("create pthread4 failed\n");
                 goto out;
         }
+        ret = pthread_join(thread4, NULL);
+        if (ret)
+            printf("join pthread4 failed: %m\n");
+        #endif
 
 
  
     /*7. Join the thread and wait until it is done */
-        ret = pthread_join(thread1, NULL);
-        if (ret)
-            printf("join pthread1 failed: %m\n");
+        
 
-        ret = pthread_join(thread2, NULL);
-        if (ret)
-            printf("join pthread2 failed: %m\n");
+        
 
-        ret = pthread_join(thread3, NULL);
-        if (ret)
-            printf("join pthread4 failed: %m\n");
+        
 
-        ret = pthread_join(thread4, NULL);
-        if (ret)
-            printf("join pthread4 failed: %m\n");
+        
 out:
     ret;
 
