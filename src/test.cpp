@@ -13,23 +13,23 @@
 #include "motor.h"
 
 using namespace std;
-const int num = 12;
-int ID[num] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+// const int num = 12;
+// int ID[num] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 struct timeval startTime1, endTime1;
 
 int main(int argc, char ** argv)
 {
-    // thread_init();
-    
+    thread_init();
+    /*
     // Motion control init start
 	Matrix<float, 4, 2> timeForStancePhase;
     float timePeriod = 0.01;
     float timeForGaitPeriod = 0.49;
 	timeForStancePhase<<0, 0.24, 0.25, 0.49, 0.25, 0.49, 0, 0.24;
 	MotionControl mc(timePeriod, timeForGaitPeriod, timeForStancePhase); // time
-	Matrix<float, 4, 3> initPos; 
-	initPos<< 3.0, 0.0, -233.83, 3.0, 0.0, -233.83, -10.0, 0.0, -233.83, -10.0, 0.0, -233.83;
 
+	Matrix<float, 4, 3> initPos; 
+	initPos<< 3.0, 0.0, -225.83, 3.0, 0.0, -225.83, -20.0, 0.0, -243.83, -20.0, 0.0, -243.83;
 	Vector<float, 3> tCV;
 	tCV<<0.0, 0.0, 0.0;
 
@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
 	mc.setCoMVel(tCV);
 
     // Port init start
-    set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID, num);
+    set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
     dxl_init();
     set_operation_mode(3); //3 position control; 0 current control
     torque_enable();
@@ -68,7 +68,7 @@ int main(int argc, char ** argv)
         double timeUse1 = 1000000*(endTime1.tv_sec - startTime1.tv_sec) + endTime1.tv_usec - startTime1.tv_usec;
         usleep(timePeriod*1e6 - (double)(timeUse1) - 10); //  1e4 / 1e6 = 0.01s 
     }
-    
+    */
     //cout<<timeUse1<<endl;
     
     return 0;
