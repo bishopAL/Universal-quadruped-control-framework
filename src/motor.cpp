@@ -293,16 +293,18 @@ void get_velocity(vector<float> &vel_present)
 
 void set_torque(float *tor_set)
 {
-  int tor[dxl_ID_num];
-  for(int i =0;i<dxl_ID_num;i++)
-  {
-    tor[i] = int(tor_set[i]);
-  }
-  int groupwrite_tor_num = groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_PRO_GOAL_CURRENT, LEN_PRO_GOAL_CURRENT);
-     // Add Dynamixel goal position value to the Syncwrite storage 
-  for(int i =0;i<dxl_ID_num;i++)
+  // if (motor_name = 2)
+  // {
+    int current[dxl_ID_num];
+    for(int i =0;i<dxl_ID_num;i++)
+    {
+      current[i] = int((0.5444 * tor_set[i] - 0.140) * 1000.0 / 2.69);
+    }
+    int groupwrite_tor_num = groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_PRO_GOAL_CURRENT, LEN_PRO_GOAL_CURRENT);
+    // Add Dynamixel goal position value to the Syncwrite storage 
+    for(int i =0;i<dxl_ID_num;i++)
     {   
-    dxl_addparam_tor_result = groupSyncWriteAddParam(groupwrite_tor_num, dxl_ID[i], tor[i], LEN_PRO_GOAL_CURRENT);
+    dxl_addparam_tor_result = groupSyncWriteAddParam(groupwrite_tor_num, dxl_ID[i], current[i], LEN_PRO_GOAL_CURRENT);
       if (dxl_addparam_tor_result != True)
       {
       fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", dxl_ID[i]);
@@ -313,7 +315,7 @@ void set_torque(float *tor_set)
     if ((dxl_comm_result = getLastTxRxResult(port_num, PROTOCOL_VERSION)) != COMM_SUCCESS)
       printf("set torque error%s\n", getTxRxResult(PROTOCOL_VERSION, dxl_comm_result));
     groupSyncWriteClearParam(groupwrite_tor_num);// Clear syncwrite parameter storage
-
+  //}
 }
 
 void get_torque(vector<int> &tor_present)

@@ -96,11 +96,11 @@ void MotionControl::nextStep()
         else timePresentForSwing(leg) = 0;
     }
 
-
     if (abs(timePresent - timeForGaitPeriod - timePeriod) < 1e-4)  // check if present time has reach the gait period                                                               
     {                                                            // if so, set it to 0.0
         timePresent = 0.0;
     }
+
 }
 
 void MotionControl::inverseKinematics()
@@ -113,6 +113,15 @@ void MotionControl::inverseKinematics()
     float a2[4] = {0};
     float b2[4] = {0};
     float c2[4] = {0};
+    static int times = 0;
+
+    if(times!=0)
+    {
+        for(int joints=0; joints<12; joints++)
+        {
+            jointCmdPosLast[joints] = jointCmdPos[joints];
+        }
+    }
 
     for(int leg_num = 0; leg_num < 4; leg_num++)
     {
@@ -146,6 +155,21 @@ void MotionControl::inverseKinematics()
     jointCmdPos[9] = 0.2770 + jo_ang[2][0] - jo_ang[2][1];
     jointCmdPos[10] = -0.2954 - jo_ang[2][0] - jo_ang[2][1];
     jointCmdPos[11] = 0.7854 - jo_ang[2][2];
+
+    if(times!=0)
+    {
+        for(int joints=0; joints<12; joints++)
+        {
+            jointCmdVel[joints] = (jointCmdPos[joints] - jointCmdPosLast[joints]) / timePeriod;
+        }
+    }
+    else
+    {
+        for(int joints=0; joints<12; joints++)
+        {
+            jointCmdVel[joints] = 0;
+        }
+    }
 }
 
 void MotionControl::updateState()

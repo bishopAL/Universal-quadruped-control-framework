@@ -107,7 +107,12 @@ void *thread2_func(void *data) // send velocity & IMU data
 
 
 void *thread3_func(void *data) // update robot state
-{
+{// Port init start
+    set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
+    dxl_init();
+    set_operation_mode(3); //3 position control; 0 current control
+    torque_enable();
+    usleep(1e6);
     struct timeval startTime3, endTime3;
     while(1)
     {
@@ -119,6 +124,14 @@ void *thread3_func(void *data) // update robot state
         // get_position(present_position);
 		// get_velocity(present_velocity);
 		// get_torque(present_torque);
+        get_position(present_position);
+        get_velocity(present_velocity);
+        for(uint8_t joints=0; joints<12; joints++)
+        {
+            mc.jointPresentPos(joints) = present_position[joints];
+            mc.jointPresentVel(joints) = present_velocity[joints];
+        }
+        set_position(mc.jointCmdPos);
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
         // cout<<"thread3: "<<timeUse<<endl;
@@ -137,14 +150,7 @@ void *thread4_func(void *data) // motion control, update goal position
     cout<<(mc.timeForGaitPeriod - (mc.timeForStancePhase(0,1) - mc.timeForStancePhase(0,0)))/2<<endl;
     cout<<"initPos vel"<<endl;
 	mc.setCoMVel(tCV);
-
-    // Port init start
-    set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
-    dxl_init();
-    set_operation_mode(3); //3 position control; 0 current control
-    torque_enable();
     mc.inverseKinematics();
-    set_position(mc.jointCmdPos);
     usleep(3e6);
     while(1)
     {
@@ -154,7 +160,6 @@ void *thread4_func(void *data) // motion control, update goal position
         */
         mc.nextStep();
         mc.inverseKinematics();
-        set_position(mc.jointCmdPos);
         gettimeofday(&endTime4,NULL);
         double timeUse = 1000000*(endTime4.tv_sec - startTime4.tv_sec) + endTime4.tv_usec - startTime4.tv_usec;
         // cout<<"thread4: "<<timeUse<<endl;
@@ -218,9 +223,7 @@ void thread_init()
                 printf("create pthread1 failed\n");
                 goto out;
         }
-        ret = pthread_join(thread1, NULL);
-        if (ret)
-            printf("join pthread1 failed: %m\n");
+        
         #endif
 
         #ifdef THREAD2_ENABLE
@@ -229,9 +232,6 @@ void thread_init()
                 printf("create pthread2 failed\n");
                 goto out;
         }
-        ret = pthread_join(thread2, NULL);
-        if (ret)
-            printf("join pthread2 failed: %m\n");
         #endif
 
         #ifdef THREAD3_ENABLE
@@ -240,9 +240,6 @@ void thread_init()
                 printf("create pthread3 failed\n");
                 goto out;
         }
-        ret = pthread_join(thread3, NULL);
-        if (ret)
-            printf("join pthread4 failed: %m\n");
         #endif
 
         #ifdef THREAD4_ENABLE
@@ -251,12 +248,31 @@ void thread_init()
                 printf("create pthread4 failed\n");
                 goto out;
         }
+        #endif
+
+        #ifdef THREAD1_ENABLE
+        ret = pthread_join(thread1, NULL);
+        if (ret)
+            printf("join pthread1 failed: %m\n");
+        #endif
+
+        #ifdef THREAD2_ENABLE
+        ret = pthread_join(thread2, NULL);
+        if (ret)
+            printf("join pthread2 failed: %m\n");
+        #endif
+
+        #ifdef THREAD3_ENABLE
+        ret = pthread_join(thread3, NULL);
+        if (ret)
+            printf("join pthread3 failed: %m\n");
+        #endif
+
+        #ifdef THREAD4_ENABLE
         ret = pthread_join(thread4, NULL);
         if (ret)
             printf("join pthread4 failed: %m\n");
         #endif
-
-
  
     /*7. Join the thread and wait until it is done */
         
@@ -274,8 +290,7 @@ out:
 vector<string> split(const string& str, const string& delim) {  
 	vector<string> res;  
 	if("" == str) return res;  
-	//先将要切割的字符串从string类型转换为char*类型  
-	char * strs = new char[str.length() + 1] ; //不要忘了  
+	char * strs = new char[str.length() + 1] ; 
 	strcpy(strs, str.c_str());   
  
 	char * d = new char[delim.length() + 1];  
@@ -283,8 +298,8 @@ vector<string> split(const string& str, const string& delim) {
  
 	char *p = strtok(strs, d);  
 	while(p) {  
-		string s = p; //分割得到的字符串转换为string类型  
-		res.push_back(s); //存入结果数组  
+		string s = p;   
+		res.push_back(s); 
 		p = strtok(NULL, d);  
 	}  
  
