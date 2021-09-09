@@ -108,11 +108,11 @@ void *thread2_func(void *data) // send velocity & IMU data
 
 void *thread3_func(void *data) // update robot state
 {// Port init start
-    set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
+    set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID, num);
     dxl_init();
-    set_operation_mode(3); //3 position control; 0 current control
+    set_operation_mode(0); //3 position control; 0 current control
     torque_enable();
-    usleep(1e6);
+    while(mc.initFlag==false);
     struct timeval startTime3, endTime3;
     while(1)
     {
@@ -126,15 +126,31 @@ void *thread3_func(void *data) // update robot state
 		// get_torque(present_torque);
         get_position(present_position);
         get_velocity(present_velocity);
+        Vector<float, 12> temp_jointCmdPos, temp_jointCmdVel;
         for(uint8_t joints=0; joints<12; joints++)
         {
             mc.jointPresentPos(joints) = present_position[joints];
             mc.jointPresentVel(joints) = present_velocity[joints];
+            temp_jointCmdPos(joints) = mc.jointCmdPos[joints];
+            temp_jointCmdVel(joints) = mc.jointCmdVel[joints];
         }
-        set_position(mc.jointCmdPos);
+        cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
+        cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
+        cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
+        cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
+        Vector<float, 12> temp_motorCmdTorque;
+        temp_motorCmdTorque = 1.5 * (temp_jointCmdPos - mc.jointPresentPos) + 0.2 * (temp_jointCmdVel - mc.jointPresentVel);
+        float motorCmdTorque[12];
+        for(uint8_t joints=0; joints<12; joints++)
+        {
+            motorCmdTorque[joints] = temp_motorCmdTorque(joints);
+        }
+        set_torque(motorCmdTorque);
+        // set_position(mc.jointCmdPos);
+        
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
-        // cout<<"thread3: "<<timeUse<<endl;
+        cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
     }
 }
@@ -147,11 +163,10 @@ void *thread4_func(void *data) // motion control, update goal position
 	Vector<float, 3> tCV;
 	tCV<<0.0, 0.0, 0.0;
 	mc.setInitPos(initPos);
-    cout<<(mc.timeForGaitPeriod - (mc.timeForStancePhase(0,1) - mc.timeForStancePhase(0,0)))/2<<endl;
-    cout<<"initPos vel"<<endl;
 	mc.setCoMVel(tCV);
     mc.inverseKinematics();
-    usleep(3e6);
+    mc.initFlag = true;
+    usleep(20e6);
     while(1)
     {
         gettimeofday(&startTime4,NULL);

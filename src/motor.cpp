@@ -251,7 +251,9 @@ void get_position(vector<float> &pos_present)
   for(int i =0 ;i<dxl_ID_num ;i++)
   { 
     uint32_t temp = groupSyncReadGetData(groupread_pos_num, dxl_ID[i], ADDR_PRO_PRESENT_POSITION, LEN_PRO_PRESENT_POSITION);
-    pos_present.push_back((float(temp)-2047.0)/4096.0*(2*3.1416));  // value range 0~4095  <--> angle range -3.1416~3.1416
+    int temp_value1 = int(float(temp) / 4096.0 * (3.1416*2)*10000);
+    int temp_value2 = int(2*3.1416*10000);
+    pos_present.push_back(float(temp_value1 % temp_value2) / 10000.0 - 3.1416);  // value range 0~4095  <--> angle range -3.1416~3.1416
   }
   groupSyncReadClearParam(groupread_pos_num);
 }
@@ -298,7 +300,7 @@ void set_torque(float *tor_set)
     int current[dxl_ID_num];
     for(int i =0;i<dxl_ID_num;i++)
     {
-      current[i] = int((0.5444 * tor_set[i] - 0.140) * 1000.0 / 2.69);
+      current[i] = int((0.5444 * tor_set[i]) * 1000.0 / 2.69);
     }
     int groupwrite_tor_num = groupSyncWrite(port_num, PROTOCOL_VERSION, ADDR_PRO_GOAL_CURRENT, LEN_PRO_GOAL_CURRENT);
     // Add Dynamixel goal position value to the Syncwrite storage 

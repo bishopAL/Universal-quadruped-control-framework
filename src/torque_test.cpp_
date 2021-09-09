@@ -1,0 +1,60 @@
+#include <thread.h>
+#include <limits.h>
+#include <pthread.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <iostream>
+#include <Eigen/Core>
+#include <motionControl.h>
+#include "motor.h"
+
+using namespace std;
+
+const int num_torq = 3;
+int ID_torq[num_torq] = {0, 1, 2};
+
+
+int main(int argc, char ** argv)
+{
+    float pos_cmd = 0.00;
+    float vel_cmd = 0.00;
+    vector<float> pos_pre, vel_pre;
+    vector<int>  tor_pre;
+    float target_pos[3] = {0.4326, 0.2654, 0.7854};
+    float motorTorque[3];
+    Matrix<float, 4, 2> timeForStancePhase;
+    float timePeriod = 0.01;
+    float timeForGaitPeriod = 0.49;
+	timeForStancePhase<<0, 0.24, 0.25, 0.49, 0.25, 0.49, 0, 0.24;
+	MotionControl mc(timePeriod, timeForGaitPeriod, timeForStancePhase);
+
+    //thread_init();
+    
+    set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID_torq, num_torq);
+    dxl_init();
+    set_operation_mode(0); //3 position control; 0 current control
+    torque_enable();
+    while(1)
+    {
+        get_position(pos_pre);
+        get_velocity(vel_pre);
+        for(int i =0; i<3; i++)
+        {
+            motorTorque[i] = 1.5 * (target_pos[i] - pos_pre[i]) + 0.2 * (0 - vel_pre[i]);
+        }
+        
+        set_torque(motorTorque);
+        get_torque(tor_pre);
+        for(int j = 0; j<3; j++)
+        {
+            cout <<"ID"<<j<<": "<< float(pos_pre[j])*180.0/3.14 << "," << float(vel_pre[j])*180.0/3.14 << "," << motorTorque[j]<<", "<<tor_pre[j] << endl;
+        }
+    }
+    
+
+    return 0;
+}

@@ -5,6 +5,7 @@ using namespace Eigen;
 
 MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
 {
+    initFlag = false;
     timePeriod = tP;
     timeForGaitPeriod = tFGP;
     timeForStancePhase = tFSP;
@@ -143,18 +144,18 @@ void MotionControl::inverseKinematics()
         jo_ang[leg_num][1] = -theta[leg_num][1];
     }
 
-    jointCmdPos[0] =  -1.3315 - jo_ang[0][0] + jo_ang[0][1];
-    jointCmdPos[1] =  1.4788 + jo_ang[0][0] + jo_ang[0][1];
-    jointCmdPos[2] = 0.7854 - jo_ang[0][2];
-    jointCmdPos[3] = 0.5292 - jo_ang[1][0] - jo_ang[1][1];
-    jointCmdPos[4] = 0.7670 + jo_ang[1][0] - jo_ang[1][1];
-    jointCmdPos[5] = -0.7854 + jo_ang[1][2];
-    jointCmdPos[6] = 1.7058 + jo_ang[3][0] - jo_ang[3][1];
-    jointCmdPos[7] = -0.3421 - jo_ang[3][0] - jo_ang[3][1];
-    jointCmdPos[8] = -0.7854 + jo_ang[3][2];
-    jointCmdPos[9] = 0.2770 + jo_ang[2][0] - jo_ang[2][1];
-    jointCmdPos[10] = -0.2954 - jo_ang[2][0] - jo_ang[2][1];
-    jointCmdPos[11] = 0.7854 - jo_ang[2][2];
+    jointCmdPos[0] = motorInitPos[0] - jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[1] = motorInitPos[1] + jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[2] = motorInitPos[2] - jo_ang[0][2];
+    jointCmdPos[3] = motorInitPos[3] - jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[4] = motorInitPos[4] + jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[5] = motorInitPos[5] + jo_ang[1][2];
+    jointCmdPos[6] = motorInitPos[6] + jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[7] = motorInitPos[7] - jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[8] = motorInitPos[8] + jo_ang[3][2];
+    jointCmdPos[9] = motorInitPos[9] + jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[10] = motorInitPos[10] - jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[11] = motorInitPos[11] - jo_ang[2][2];
 
     if(times!=0)
     {
@@ -170,6 +171,12 @@ void MotionControl::inverseKinematics()
             jointCmdVel[joints] = 0;
         }
     }
+    times++;
+}
+
+void MotionControl::forwardKinematics()
+{
+    
 }
 
 void MotionControl::updateState()

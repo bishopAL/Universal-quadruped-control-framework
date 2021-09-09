@@ -40,6 +40,9 @@ class MotionControl
         float jointCmdPos[12];  // command motor 0-11
         float jointCmdPosLast[12];
         float jointCmdVel[12];
+        float motorTorque[1];
+        float motorInitPos[12] = {0.4326, 0.2654, 0.7854, 0.6888, 0.9050, -0.7854, 1.6751, -0.3390, -0.7854, 0.4663, -0.2424, 0.7854};
+        bool initFlag;
         void setInitPos(Matrix<float, 4, 3> initPosition);
         void setCoMVel(Vector<float, 3> tCV);
         void nextStep();
@@ -47,6 +50,7 @@ class MotionControl
         void setInitial();
         void updateState();
         void creepingGait();   // the creeping gait from gecko_inspired
+        void forwardKinematics();
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
 
 };
