@@ -176,7 +176,79 @@ void MotionControl::inverseKinematics()
 
 void MotionControl::forwardKinematics()
 {
-    
+    float joint_pre_pos[4][3];
+    joint_pre_pos[0][0] = (jointPresentPos[1] - motorInitPos[1] - jointPresentPos[0] + motorInitPos[0])/2;
+    joint_pre_pos[0][1] = (jointPresentPos[1] - motorInitPos[1] + jointPresentPos[0] - motorInitPos[0])/2;
+    joint_pre_pos[0][2] = - (jointPresentPos[2] - motorInitPos[2]);
+    joint_pre_pos[1][0] = (jointPresentPos[4] - motorInitPos[4] - jointPresentPos[3] + motorInitPos[3])/2;
+    joint_pre_pos[1][1] = -(jointPresentPos[4] - motorInitPos[4] + jointPresentPos[3] - motorInitPos[3])/2;
+    joint_pre_pos[1][2] = jointPresentPos[5] - motorInitPos[5];
+    joint_pre_pos[2][0] = (jointPresentPos[9] - motorInitPos[9] - jointPresentPos[10] + motorInitPos[10])/2;
+    joint_pre_pos[2][1] = (-jointPresentPos[9] + motorInitPos[9] - jointPresentPos[10] + motorInitPos[10])/2;
+    joint_pre_pos[2][2] = - (jointPresentPos[11] - motorInitPos[11]);
+    joint_pre_pos[3][0] = (jointPresentPos[6] - motorInitPos[6] - jointPresentPos[7] + motorInitPos[7])/2;
+    joint_pre_pos[3][1] = (-jointPresentPos[6] + motorInitPos[6] - jointPresentPos[7] + motorInitPos[7])/2;
+    joint_pre_pos[3][2] = jointPresentPos[8] - motorInitPos[8];
+
+
+    for(int leg_nums = 0; leg_nums < 4; leg_nums++)
+    {
+        legPresentPos(leg_nums,0) = L2 * cos(joint_pre_pos[leg_nums][0]) * cos(joint_pre_pos[leg_nums][1] + joint_pre_pos[leg_nums][2]) + L1 * cos(joint_pre_pos[leg_nums][0]) * cos(joint_pre_pos[leg_nums][1]);
+        legPresentPos(leg_nums,1) = L2 * sin(joint_pre_pos[leg_nums][0]) * cos(joint_pre_pos[leg_nums][1] + joint_pre_pos[leg_nums][2]) + L1 * sin(joint_pre_pos[leg_nums][0]) * cos(joint_pre_pos[leg_nums][1]);
+        legPresentPos(leg_nums,2) = L2 * sin(joint_pre_pos[leg_nums][1] + joint_pre_pos[leg_nums][2]) + L1 * sin(joint_pre_pos[leg_nums][1]);
+    }
+
+    for(int leg_num1 = 0; leg_num1 < 4; leg_num1++)
+    {
+        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
+        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
+        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
+    }
+
+
+}
+
+void MotionControl::jacobians()
+{
+    jacobian(0 ,0) = -L3 * sin(jointPresentPos[0]) * cos(jointPresentPos[1] + jointPresentPos[2]) - L1 * sin(jointPresentPos[0]) * cos(jointPresentPos[1]);
+    jacobian(0 ,1) =  L3 * cos(jointPresentPos[0]) * cos(jointPresentPos[1] + jointPresentPos[2]) + L1 * cos(jointPresentPos[0]) * cos(jointPresentPos[1]);
+    jacobian(0 ,2) = 0;
+    jacobian(0 ,3) = -L3 * cos(jointPresentPos[0]) * sin(jointPresentPos[1] + jointPresentPos[2]) - L1 * cos(jointPresentPos[0]) * sin(jointPresentPos[1]);
+    jacobian(0 ,4) = -L3 * sin(jointPresentPos[0]) * sin(jointPresentPos[1] + jointPresentPos[2]) - L1 * sin(jointPresentPos[0]) * sin(jointPresentPos[1]);
+    jacobian(0 ,5) = L3 * cos(jointPresentPos[1] + jointPresentPos[2]) + L1 * cos(jointPresentPos[1]);
+    jacobian(0 ,6) = -L3 * cos(jointPresentPos[0]) * sin(jointPresentPos[1] + jointPresentPos[2]);
+    jacobian(0 ,7) = -L3 * sin(jointPresentPos[0]) * sin(jointPresentPos[1] + jointPresentPos[2]);
+    jacobian(0 ,8) = L3 * cos(jointPresentPos[1] + jointPresentPos[2]);
+
+    jacobian(1 ,0)= -L3 * sin(jointPresentPos[3]) * cos(jointPresentPos[4] + jointPresentPos[5]) - L1 * sin(jointPresentPos[3]) * cos(jointPresentPos[4]);
+    jacobian(1 ,1) =  L3 * cos(jointPresentPos[3]) * cos(jointPresentPos[4] + jointPresentPos[5]) + L1 * cos(jointPresentPos[3]) * cos(jointPresentPos[4]);
+    jacobian(1 ,2) = 0;
+    jacobian(1 ,3) = -L3 * cos(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]) - L1 * cos(jointPresentPos[3]) * sin(jointPresentPos[4]);
+    jacobian(1 ,4) = -L3 * sin(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]) - L1 * sin(jointPresentPos[3]) * sin(jointPresentPos[4]);
+    jacobian(1 ,5) = L3 * cos(jointPresentPos[4] + jointPresentPos[5]) + L1 * cos(jointPresentPos[4]);
+    jacobian(1 ,6) = -L3 * cos(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]);
+    jacobian(1 ,7) = -L3 * sin(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]);
+    jacobian(1 ,8) = L3 * cos(jointPresentPos[4] + jointPresentPos[5]);
+
+    jacobian(2 ,0)= -L3 * sin(jointPresentPos[6]) * cos(jointPresentPos[7] + jointPresentPos[8]) - L1 * sin(jointPresentPos[6]) * cos(jointPresentPos[7]);
+    jacobian(2 ,1) =  L3 * cos(jointPresentPos[6]) * cos(jointPresentPos[7] + jointPresentPos[8]) + L1 * cos(jointPresentPos[6]) * cos(jointPresentPos[7]);
+    jacobian(2 ,2) = 0;
+    jacobian(2 ,3) = -L3 * cos(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]) - L1 * cos(jointPresentPos[6]) * sin(jointPresentPos[7]);
+    jacobian(2 ,4) = -L3 * sin(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]) - L1 * sin(jointPresentPos[6]) * sin(jointPresentPos[7]);
+    jacobian(2 ,5) = L3 * cos(jointPresentPos[7] + jointPresentPos[8]) + L1 * cos(jointPresentPos[7]);
+    jacobian(2 ,6) = -L3 * cos(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]);
+    jacobian(2 ,7) = -L3 * sin(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]);
+    jacobian(2 ,8) = L3 * cos(jointPresentPos[7] + jointPresentPos[8]);
+
+    jacobian(3, 0) = -L3 * sin(jointPresentPos[9]) * cos(jointPresentPos[10] + jointPresentPos[11]) - L1 * sin(jointPresentPos[9]) * cos(jointPresentPos[10]);
+    jacobian(3, 1) =  L3 * cos(jointPresentPos[9]) * cos(jointPresentPos[10] + jointPresentPos[11]) + L1 * cos(jointPresentPos[9]) * cos(jointPresentPos[10]);
+    jacobian(3, 2) = 0;
+    jacobian(3, 3) = -L3 * cos(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]) - L1 * cos(jointPresentPos[9]) * sin(jointPresentPos[10]);
+    jacobian(3, 4) = -L3 * sin(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]) - L1 * sin(jointPresentPos[9]) * sin(jointPresentPos[10]);
+    jacobian(3, 5) = L3 * cos(jointPresentPos[10] + jointPresentPos[11]) + L1 * cos(jointPresentPos[10]);
+    jacobian(3, 6) = -L3 * cos(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]);
+    jacobian(3, 7) = -L3 * sin(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]);
+    jacobian(3, 8) = L3 * cos(jointPresentPos[10] + jointPresentPos[11]);
 }
 
 void MotionControl::updateState()
@@ -184,6 +256,78 @@ void MotionControl::updateState()
     
 }
 
+void MotionControl::vmc()
+{
+    if (stanceFlag[0] == 0)
+    {
+        float xf= leg2CoMPrePos(0, 0);
+        float yf= leg2CoMPrePos(0, 1);
+        float zf= leg2CoMPrePos(0, 2);
+        float xh= leg2CoMPrePos(3, 0);
+        float yh= leg2CoMPrePos(3, 1);
+        float zh= leg2CoMPrePos(3, 2);
+        A << 1, 0, 0, 1, 0, 0,
+             0, 1, 0, 0, 1, 0, 
+             0, 0, 1, 0, 0, 1, 
+             0, -zf, yf, 0, -zh, yh, 
+             zf, 0, -xf, zh, 0, -xh, 
+             -yh, -xf, 0, yh, xh, 0;
+        float kx = 0.02;
+        float ky = 0.001;
+        float kw = 0.02;
+        float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
+        float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
+        B << Fx, Fy, 9.8, 0, 0, tao_z;
+        double u=2.14;
+        double k=1;
+        a << -1, 0, 0, 1, 0, 0, 
+            0, -1, 0, 0, 1, 0, 
+            1, 1, -sqrt(2)*u/k, 0, 0, 0, 
+            0, 0, 0, 1, 1, -sqrt(2)*u/k;
+        b << Fx, Fy, 0, 0;
+    }
+    else
+    {
+        float xf= leg2CoMPrePos(1, 0);
+        float yf= leg2CoMPrePos(1, 1);
+        float zf= leg2CoMPrePos(1, 2);
+        float xh= leg2CoMPrePos(2, 0);
+        float yh= leg2CoMPrePos(2, 1);
+        float zh= leg2CoMPrePos(2, 2);
+        A << 1, 0, 0, 1, 0, 0,
+             0, 1, 0, 0, 1, 0, 
+             0, 0, 1, 0, 0, 1, 
+             0, -zf, yf, 0, -zh, yh, 
+             zf, 0, -xf, zh, 0, -xh, 
+             -yh, -xf, 0, yh, xh, 0;
+        float kx = 0.02;
+        float ky = 0.001;
+        float kw = 0.02;
+        float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
+        float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
+        B << Fx, Fy, 9.8, 0, 0, tao_z;
+        double u=2.14;
+        double k=1;
+        a << -1, 0, 0, 1, 0, 0, 
+            0, -1, 0, 0, 1, 0, 
+            1, 1, -sqrt(2)*u/k, 0, 0, 0, 
+            0, 0, 0, 1, 1, -sqrt(2)*u/k;
+        b << Fx, Fy, 0, 0;
+    }
+    int m = 4;
+    MatrixXf n(6+m, 6+m);
+    n.block(0, 0, 6, 6) = A.transpose()*A;
+    n.block(6, 0, m, 6) = a;
+    n.block(0, 6, 6, m) = -a.transpose(); 
+    n.block(6, 6, m, m) = MatrixXf::Zero(m,m);
+    VectorXf nt(6+m, 1);
+    nt.head(6) = A.transpose()*B;
+    nt.tail(m) = b; 
+    VectorXf x(6+m, 1);
+    x = n.colPivHouseholderQr().solve(nt);
+}
 
 void MotionControl::setInitial()
 {

@@ -1,0 +1,1 @@
+/usr/bin/c++  -O0 -Wall -g -ggdb  -rdynamic CMakeFiles/test.dir/src/motionControl.cpp.o CMakeFiles/test.dir/src/motor.cpp.o CMakeFiles/test.dir/src/test.cpp.o CMakeFiles/test.dir/src/thread.cpp.o  -o test  -lpthread -ldxl_sbc_c -lrt -lm -lCppLinuxSerial 

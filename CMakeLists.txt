@@ -15,4 +15,4 @@ include_directories(/usr/include/ )
 AUX_SOURCE_DIRECTORY(./src DIR_SRCS)
 
 ADD_EXECUTABLE(test ${DIR_SRCS})
-target_link_libraries(test pthread dxl_x64_c rt m CppLinuxSerial)
+target_link_libraries(test pthread dxl_sbc_c rt m CppLinuxSerial)

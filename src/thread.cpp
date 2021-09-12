@@ -21,6 +21,7 @@
 #define THREAD3_ENABLE 1
 #define THREAD4_ENABLE 1
 
+
 using namespace std;
 
 struct timeval startTime, endTime;
@@ -108,9 +109,9 @@ void *thread2_func(void *data) // send velocity & IMU data
 
 void *thread3_func(void *data) // update robot state
 {// Port init start
-    set_port_baudrate_ID("/dev/ttyUSB0", 3000000, ID, num);
+    set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
     dxl_init();
-    set_operation_mode(0); //3 position control; 0 current control
+    set_operation_mode(3); //3 position control; 0 current control
     torque_enable();
     while(mc.initFlag==false);
     struct timeval startTime3, endTime3;
@@ -125,6 +126,7 @@ void *thread3_func(void *data) // update robot state
 		// get_velocity(present_velocity);
 		// get_torque(present_torque);
         get_position(present_position);
+
         get_velocity(present_velocity);
         Vector<float, 12> temp_jointCmdPos, temp_jointCmdVel;
         for(uint8_t joints=0; joints<12; joints++)
@@ -134,23 +136,28 @@ void *thread3_func(void *data) // update robot state
             temp_jointCmdPos(joints) = mc.jointCmdPos[joints];
             temp_jointCmdVel(joints) = mc.jointCmdVel[joints];
         }
-        cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
-        cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
-        cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
-        cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
+        // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
+        // cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
+        // cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
+        // cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
         Vector<float, 12> temp_motorCmdTorque;
-        temp_motorCmdTorque = 1.5 * (temp_jointCmdPos - mc.jointPresentPos) + 0.2 * (temp_jointCmdVel - mc.jointPresentVel);
+        temp_motorCmdTorque = 5 * (temp_jointCmdPos - mc.jointPresentPos) + 0.2 * (temp_jointCmdVel - mc.jointPresentVel);
         float motorCmdTorque[12];
         for(uint8_t joints=0; joints<12; joints++)
         {
             motorCmdTorque[joints] = temp_motorCmdTorque(joints);
         }
-        set_torque(motorCmdTorque);
-        // set_position(mc.jointCmdPos);
-        
+        //set_torque(motorCmdTorque);
+
+        set_position(mc.jointCmdPos);
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
-        cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
+
+        ofstream f("data.txt", ios::app);
+	    f<<mc.jointPresentPos(0)<<" "<<mc.jointPresentPos(1)<<" "<<mc.jointPresentPos(2)<<" "<<mc.jointPresentPos(3)<<" "<<mc.jointPresentPos(4)<<" "<<mc.jointPresentPos(5)<<" "<<mc.jointPresentPos(6)<<" "<<mc.jointPresentPos(7)<<" "<<mc.jointPresentPos(8)<<" "<<mc.jointPresentPos(9)<<" "<<mc.jointPresentPos(10)<<" "<<mc.jointPresentPos(11)<<endl;
+        f.close();
+
+        //cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
     }
 }
@@ -166,7 +173,7 @@ void *thread4_func(void *data) // motion control, update goal position
 	mc.setCoMVel(tCV);
     mc.inverseKinematics();
     mc.initFlag = true;
-    usleep(20e6);
+    usleep(3e6);
     while(1)
     {
         gettimeofday(&startTime4,NULL);

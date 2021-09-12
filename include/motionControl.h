@@ -12,6 +12,12 @@
 #include <iostream>
 #include <math.h>
 #include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Eigen>
+#include <Eigen/Sparse>
+#include <Eigen/SVD>
+#include <fstream>
+
 
 using namespace std;
 using namespace Eigen;
@@ -33,15 +39,22 @@ class MotionControl
         Matrix<float, 4, 2> shoulderPos;  // X-Y: LF, RF, LH, RH
         Matrix<float, 4, 3> stancePhaseStartPos;
         Matrix<float, 4, 3> stancePhaseEndPos;
-        Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
+        Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH in Shoulder cordinate
         Matrix<float, 4, 3> legCmdPos;  // command X-Y-Z: LF, RF, LH, RH in CoM cordinate
+        Matrix<float, 4, 3> leg2CoMPrePos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Vector<float, 12> jointPresentPos;  // present motor 0-11
         Vector<float, 12> jointPresentVel;  // present motor 0-11
+        Vector<float, 6> jacobian_Force;
+        Matrix<float, 4, 9>jacobian;
+        Matrix<float, 6, 6>A;
+        Vector<float, 6>B;
+        Matrix<float, 4, 6>a;
+        Vector<float, 4>b;
         float jointCmdPos[12];  // command motor 0-11
         float jointCmdPosLast[12];
         float jointCmdVel[12];
         float motorTorque[1];
-        float motorInitPos[12] = {0.4326, 0.2654, 0.7854, 0.6888, 0.9050, -0.7854, 1.6751, -0.3390, -0.7854, 0.4663, -0.2424, 0.7854};
+        float motorInitPos[12] = {0.3145, 0.2378, 0.7854, 0.6888, 0.9050, -0.7854, 0.9234, -0.5906, -0.7854, 0.4663, -0.2424, 0.7854};
         bool initFlag;
         void setInitPos(Matrix<float, 4, 3> initPosition);
         void setCoMVel(Vector<float, 3> tCV);
@@ -51,6 +64,8 @@ class MotionControl
         void updateState();
         void creepingGait();   // the creeping gait from gecko_inspired
         void forwardKinematics();
+        void jacobians();
+        void vmc();
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
 
 };
