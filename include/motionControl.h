@@ -52,18 +52,18 @@ class MotionControl
         Vector<float, 12> joint_cmd_pos;  // command joint angle 0-11
         Vector<float, 12> jointPresentPos;  // present motor 0-11
         Vector<float, 12> jointPresentVel;  // present motor 0-11
-        Vector<float, 12> jacobian_torque;
-        
-        Matrix<float, 4, 9>jacobian;
-        Matrix<float, 6, 6>A;
-        Vector<float, 6>B;
-        Matrix<float, 4, 6>a;
-        Vector<float, 4>b;
+        Matrix<float, 4, 9>jacobian; 
+        Matrix<float, 6, 6>A;     //VMC
+        Vector<float, 6>B;        //VMC
+        Matrix<float, 4, 6>a;     //VMC
+        Vector<float, 4>b;        //VMC
         float jointCmdPos[12];  // command motor 0-11
         float jointCmdPosLast[12];
         float jointCmdVel[12];
         float motorTorque[1];
         float motorInitPos[12];
+        float pid_motortorque[12];
+        float jacobian_motortorque[12]; //motor torque in VMC
         float motorCmdTorque[12];
         
         bool initFlag;

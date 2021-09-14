@@ -310,15 +310,18 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
-        float kx = 0.02;
-        float ky = 0.001;
-        float kw = 0.02;
-        float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
-        float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
-        float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
-        B << Fx, Fy, 9.8, 0, 0, tao_z;
-        double u=2.14;
-        double k=1;
+        // float kx = 0.02;
+        // float ky = 0.001;
+        // float kw = 0.02;
+        // float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
+        // float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
+        float Fx = 0.0;
+        float Fy = 0.0;
+        float tao_z = 0.0;
+        B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
+        double u=0.7;
+        double k=2;
         a << -1, 0, 0, 1, 0, 0, 
             0, -1, 0, 0, 1, 0, 
             1, 1, -sqrt(2)*u/k, 0, 0, 0, 
@@ -339,15 +342,18 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
-        float kx = 0.02;
-        float ky = 0.001;
-        float kw = 0.02;
-        float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
-        float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
-        float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
-        B << Fx, Fy, 9.8, 0, 0, tao_z;
-        double u=2.14;
-        double k=1;
+        // float kx = 0.02;
+        // float ky = 0.02;
+        // float kw = 0.02;
+        // float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
+        // float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
+        float Fx = 0.0;
+        float Fy = 0.0;
+        float tao_z = 0.0;
+        B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
+        double u=0.7;
+        double k=2;
         a << -1, 0, 0, 1, 0, 0, 
             0, -1, 0, 0, 1, 0, 
             1, 1, -sqrt(2)*u/k, 0, 0, 0, 
@@ -367,12 +373,58 @@ void MotionControl::vmc()
     x = n.colPivHouseholderQr().solve(nt);
     Vector<float, 6> jacobian_Force;
     jacobian_Force = x.head(6);
-    // Matrix<float, 3 ,3>
-    // if (stanceFlag[0] == 0)
-    // {
-    //     jacobian_torque.head(6) = 
-    // }
-    
+    Vector<float, 6> temp_Force;
+    temp_Force = x.head(6);
+    Matrix<float, 6, 6>jacobian_Matrix;
+    Vector<float, 12>jacobian_torque;
+    if (stanceFlag[0] == 0)
+    {
+        jacobian_Matrix.block(0,0,3,3) << jacobian(0 ,0), jacobian(0 ,1), jacobian(0 ,2),
+                                          jacobian(0 ,3), jacobian(0 ,4), jacobian(0 ,5),
+                                          jacobian(0 ,6), jacobian(0 ,7), jacobian(0 ,8);
+        jacobian_Matrix.block(3,3,3,3) << jacobian(3 ,0), jacobian(3 ,1), jacobian(3 ,2),
+                                          jacobian(3 ,3), jacobian(3 ,4), jacobian(3 ,5),
+                                          jacobian(3 ,6), jacobian(3 ,7), jacobian(3 ,8);
+        jacobian_Matrix.block(0,3,3,3) = MatrixXf::Zero(3, 3);
+        jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
+        Vector<float, 6> temp_torque;
+        temp_torque = jacobian_Matrix * temp_Force;
+        cout<<"stance left: "<<temp_Force<<endl;
+        jacobian_torque.head(3) = temp_torque.head(3);
+        jacobian_torque.tail(3) = temp_torque.tail(3);
+        jacobian_torque.segment(3, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+        
+    }
+    else
+    {
+        jacobian_Matrix.block(0,0,3,3) << jacobian(1 ,0), jacobian(1 ,1), jacobian(1 ,2),
+                                          jacobian(1 ,3), jacobian(1 ,4), jacobian(1 ,5),
+                                          jacobian(1 ,6), jacobian(1 ,7), jacobian(1 ,8);
+        jacobian_Matrix.block(3,3,3,3) << jacobian(2 ,0), jacobian(2 ,1), jacobian(2 ,2),
+                                          jacobian(2 ,3), jacobian(2 ,4), jacobian(2 ,5),
+                                          jacobian(2 ,6), jacobian(2 ,7), jacobian(2 ,8);
+        jacobian_Matrix.block(0,3,3,3) = MatrixXf::Zero(3, 3);
+        jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
+        Vector<float, 6> temp_torque;
+        temp_torque = jacobian_Matrix * temp_Force;
+        cout<<"stance right: "<<temp_Force << endl;
+        jacobian_torque.head(3) << 0.0, 0.0, 0.0;
+        jacobian_torque.tail(3) << 0.0, 0.0, 0.0;
+        jacobian_torque.segment(3, 6) = temp_torque;
+    }   
+    jacobian_motortorque[0] = 0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
+    jacobian_motortorque[1] = -0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
+    jacobian_motortorque[2] = jacobian_torque(2);
+    jacobian_motortorque[3] = 0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
+    jacobian_motortorque[4] = -0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
+    jacobian_motortorque[5] = jacobian_torque(5);
+    jacobian_motortorque[6] = 0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
+    jacobian_motortorque[7] = -0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
+    jacobian_motortorque[8] = jacobian_torque(8);
+    jacobian_motortorque[9] = 0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
+    jacobian_motortorque[10] = -0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
+    jacobian_motortorque[11] = jacobian_torque(11);
+       
 }
 
 void MotionControl::setInitial()
@@ -403,6 +455,27 @@ void MotionControl::setInitial()
     // jointCmdPos[11] = 0.7854 - gm;
 }
 
+void MotionControl::pid()
+{
+    Vector<float, 12> temp_jointCmdPos, temp_jointCmdVel;
+    for(uint8_t joints=0; joints<12; joints++)
+    {
+        temp_jointCmdPos(joints) = jointCmdPos[joints];
+        temp_jointCmdVel(joints) = jointCmdVel[joints];
+    }
+    // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
+    // cout<<"yawVelocity: "<<mc.yawVelocity<<endl;
+    //cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
+    // cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
+    //cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
+    Vector<float, 12> temp_motorCmdTorque;
+    temp_motorCmdTorque = 5 * (temp_jointCmdPos - jointPresentPos) + 0.2 * (temp_jointCmdVel - jointPresentVel);
+    // float motorCmdTorque[12];
+    for(uint8_t joints=0; joints<12; joints++)
+    {
+        pid_motortorque[joints] = temp_motorCmdTorque(joints);
+    }
+}
 
 // creeping gait generated by X,Y,yaw from via points(position planning, independent part)
 void MotionControl::creepingGait(float X_tar, float Y_tar, float Yaw_tar) 
@@ -599,28 +672,6 @@ void MotionControl::creepingGait(float X_tar, float Y_tar, float Yaw_tar)
     //     // delay_ms(2000);
     //     }
     // }
-}
-
-void MotionControl::pid()
-{
-    Vector<float, 12> temp_jointCmdPos, temp_jointCmdVel;
-    for(uint8_t joints=0; joints<12; joints++)
-    {
-        temp_jointCmdPos(joints) = jointCmdPos[joints];
-        temp_jointCmdVel(joints) = jointCmdVel[joints];
-    }
-    // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
-    // cout<<"yawVelocity: "<<mc.yawVelocity<<endl;
-    //cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
-    // cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
-    //cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
-    Vector<float, 12> temp_motorCmdTorque;
-    temp_motorCmdTorque = 5 * (temp_jointCmdPos - jointPresentPos) + 0.2 * (temp_jointCmdVel - jointPresentVel);
-    // float motorCmdTorque[12];
-    for(uint8_t joints=0; joints<12; joints++)
-    {
-        motorCmdTorque[joints] = temp_motorCmdTorque(joints);
-    }
 }
 
 void MotionControl::standing2creeping()

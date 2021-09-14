@@ -15,8 +15,8 @@
 #include <motionControl.h>
 #include <Eigen/Core>
 #include <js.h>
+
 #define PI 3.1415926
-// #include <imu.h>
 #define _JOYSTICK 1
 #define THREAD1_ENABLE 1
 #define THREAD2_ENABLE 1
@@ -98,9 +98,11 @@ void *thread2_func(void *data) // send velocity & IMU data
     while(1)
     {
         gettimeofday(&startTime2,NULL);
+        
         /*
         YOUR CODE HERE
         */
+
         gettimeofday(&endTime2,NULL);
         double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
         // cout<<"thread2: "<<timeUse<<endl;
@@ -136,6 +138,42 @@ void *thread3_func(void *data) // update robot state
             mc.jointPresentVel(joints) = present_velocity[joints];
         }
         mc.pid();
+        mc.vmc();
+        float k = 0.8;
+        if (mc.stanceFlag[0] == 0)
+        {
+            for(uint8_t joints=0; joints<3; joints++)
+            {
+                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+            }
+            for(uint8_t joints=3; joints<9; joints++)
+            {
+                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+            }
+            for(uint8_t joints=9; joints<12; joints++)
+            {
+                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+            }
+        }
+        else
+        {
+            for(uint8_t joints=0; joints<3; joints++)
+            {
+                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+            }
+            for(uint8_t joints=3; joints<9; joints++)
+            {
+                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+            }
+            for(uint8_t joints=9; joints<12; joints++)
+            {
+                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+            }
+        }
+        // for(uint8_t joints=0; joints<12; joints++)
+        // {
+        //     mc.motorCmdTorque[joints] = 0.8 * mc.pid_motortorque[joints] + 0.2 * mc.jacobian_motortorque[joints];
+        // }
         set_torque(mc.motorCmdTorque);
         //set_position(mc.jointCmdPos);
         gettimeofday(&endTime3,NULL);
@@ -171,7 +209,7 @@ void *thread4_func(void *data) // motion control, update goal position
     Matrix<float, 4, 3> initPos; 
 	initPos<< 3.0, 0.0, -225.83, 3.0, 0.0, -225.83, -20.0, 0.0, -243.83, -20.0, 0.0, -243.83;
 	Vector<float, 3> tCV;
-	tCV<<0.0, 0.0, 0.0;
+	tCV<< 50.0, 0.0, 0.0;
 	mc.setInitPos(initPos);
 	mc.setCoMVel(tCV);
     mc.inverseKinematics();
@@ -192,7 +230,6 @@ void *thread4_func(void *data) // motion control, update goal position
     }
 }
 
-
 void thread_init()
 {
     struct sched_param param;
@@ -200,7 +237,7 @@ void thread_init()
     pthread_t thread1 ,thread2 ,thread3, thread4;
     int ret;
 
-    timeForStancePhase<<0, 0.24, 0.25, 0.49, 0.25, 0.49, 0, 0.24;
+    timeForStancePhase << 0, 0.24, 0.25, 0.49, 0.25, 0.49, 0, 0.24;
     mc.timeForStancePhase = timeForStancePhase;
     
     /* 1.Lock memory */
