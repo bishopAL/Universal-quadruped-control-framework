@@ -49,6 +49,7 @@ class MotionControl
         Matrix<float, 4, 3> leg2CoMPrePos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Matrix<float, 4, 3> leg2CoMCmdPos;  // command X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Vector<float, 12> joint_pre_pos;  // present joint angle 0-11
+        Vector<float, 12> joint_cmd_pos;  // command joint angle 0-11
         Vector<float, 12> jointPresentPos;  // present motor 0-11
         Vector<float, 12> jointPresentVel;  // present motor 0-11
         Vector<float, 12> jacobian_torque;
