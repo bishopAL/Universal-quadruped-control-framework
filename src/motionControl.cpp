@@ -157,6 +157,19 @@ void MotionControl::inverseKinematics()
         jo_ang[leg_num][1] = -theta[leg_num][1];
     }
 
+    joint_cmd_pos[0] = jo_ang[0][0];
+    joint_cmd_pos[1] = jo_ang[0][1];
+    joint_cmd_pos[2] = jo_ang[0][2];
+    joint_cmd_pos[3] = jo_ang[1][0];
+    joint_cmd_pos[4] = jo_ang[1][1];
+    joint_cmd_pos[5] = jo_ang[1][2];
+    joint_cmd_pos[6] = jo_ang[2][0];
+    joint_cmd_pos[7] = jo_ang[2][1];
+    joint_cmd_pos[8] = jo_ang[2][2];
+    joint_cmd_pos[9] = jo_ang[3][0];
+    joint_cmd_pos[10] = jo_ang[3][1];
+    joint_cmd_pos[11] = jo_ang[3][2];
+
     jointCmdPos[0] = motorInitPos[0] - jo_ang[0][0] + jo_ang[0][1];
     jointCmdPos[1] = motorInitPos[1] + jo_ang[0][0] + jo_ang[0][1];
     jointCmdPos[2] = motorInitPos[2] - jo_ang[0][2];
