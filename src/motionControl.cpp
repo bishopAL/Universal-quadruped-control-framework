@@ -310,6 +310,18 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
+        // Matrix<float, 3, 3>temp_Matrix;
+        // temp_Matrix << jacobian(3 ,0), jacobian(3 ,1), jacobian(3 ,2),
+        //                jacobian(3 ,3), jacobian(3 ,4), jacobian(3 ,5),
+        //                jacobian(3 ,6), jacobian(3 ,7), jacobian(3 ,8);
+        // Vector<float, 3>temp_vel;
+        // temp_vel(0) = (jointPresentVel(9) - jointPresentVel(10))/2;
+        // temp_vel(1) = (jointPresentVel(9) + jointPresentVel(10))/2;
+        // temp_vel(2) = -jointPresentVel(11);
+        // Vector<float, 3>temp_comvel;
+        // temp_comvel = -temp_vel;
+        // presentCoMVelocity[0] = temp_comvel(0);
+        // presentCoMVelocity[1] = temp_comvel(1);
         // float kx = 0.02;
         // float ky = 0.001;
         // float kw = 0.02;
@@ -342,6 +354,18 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
+        // Matrix<float, 3, 3>temp_Matrix;
+        // temp_Matrix << jacobian(2 ,0), jacobian(2 ,1), jacobian(2 ,2),
+        //                jacobian(2 ,3), jacobian(2 ,4), jacobian(2 ,5),
+        //                jacobian(2 ,6), jacobian(2 ,7), jacobian(2 ,8);
+        // Vector<float, 3>temp_vel
+        // temp_vel(0) = (jointPresentVel(6) - jointPresentVel(7))/2;
+        // temp_vel(1) = (jointPresentVel(6) + jointPresentVel(7))/2;
+        // temp_vel(2) = -jointPresentVel(8);
+        // Vector<float, 3>temp_comvel;
+        // temp_comvel = -temp_vel;
+        // presentCoMVelocity[0] = temp_comvel(0);
+        // presentCoMVelocity[1] = temp_comvel(1);
         // float kx = 0.02;
         // float ky = 0.02;
         // float kw = 0.02;
@@ -389,7 +413,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        cout<<"stance left: "<<temp_Force<<endl;
+        // cout<<"stance left: "<<temp_Force<<endl;
         jacobian_torque.head(3) = temp_torque.head(3);
         jacobian_torque.tail(3) = temp_torque.tail(3);
         jacobian_torque.segment(3, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -407,7 +431,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        cout<<"stance right: "<<temp_Force << endl;
+        // cout<<"stance right: "<<temp_Force << endl;
         jacobian_torque.head(3) << 0.0, 0.0, 0.0;
         jacobian_torque.tail(3) << 0.0, 0.0, 0.0;
         jacobian_torque.segment(3, 6) = temp_torque;

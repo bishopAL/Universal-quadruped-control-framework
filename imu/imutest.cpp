@@ -9,20 +9,56 @@
 #include<time.h>
 #include<sys/types.h>
 #include<errno.h>
-#define BAUD 115200 //115200 for JY61 ,9600 for others
+#define BAUD 9600 //115200 for JY61 ,9600 for others
 
 static int ret;
 static int fd;
 
+float a[3],w[3],Angle[3],h[3];
+void ParseData(char chr)
+{
+    static char chrBuf[100];
+    static unsigned char chrCnt=0;
+    signed short sData[4];
+    unsigned char i;
+    
+    time_t now;
+    chrBuf[chrCnt++]=chr;
+    if (chrCnt<11) return;
+    
+    if ((chrBuf[0]!=0x55)||((chrBuf[1]&0x50)!=0x50)) {printf("Error:%x %x\r\n",chrBuf[0],chrBuf[1]);memcpy(&chrBuf[0],&chrBuf[1],10);chrCnt--;return;}
+    
+    memcpy(&sData[0],&chrBuf[2],8);
+		switch(chrBuf[1])
+		{
+				case 0x51:
+					for (i=0;i<3;i++) a[i] = (float)sData[i]/32768.0*16.0;
+					time(&now);
+					printf("\r\nT:%s a:%6.3f %6.3f %6.3f ",asctime(localtime(&now)),a[0],a[1],a[2]);
+					
+					break;
+				case 0x52:
+					for (i=0;i<3;i++) w[i] = (float)sData[i]/32768.0*2000.0;
+					printf("w:%7.3f %7.3f %7.3f ",w[0],w[1],w[2]);					
+					break;
+				case 0x53:
+					for (i=0;i<3;i++) Angle[i] = (float)sData[i]/32768.0*180.0;
+					printf("A:%7.3f %7.3f %7.3f ",Angle[0],Angle[1],Angle[2]);
+					break;
+				case 0x54:
+					for (i=0;i<3;i++) h[i] = (float)sData[i];
+					printf("h:%4.0f %4.0f %4.0f ",h[0],h[1],h[2]);
+					
+					break;
+		}		
+		chrCnt=0;		
+}
 
 int main(void)
 {
-    static int ret;
-    static int fd;
-
     char r_buf[1024];
     bzero(r_buf,1024);
-    FILE *fp;
+    
 
     //uart_open(variables)
     int fd_open = fd;
@@ -34,15 +70,14 @@ int main(void)
     //recv_data(variables)
     int fd_recv = fd; char* recv_buffer = r_buf; int length = 44;
     //parsedata(variables)
-    char chr;
-    float a[3],w[3],Angle[3],h[3];
-    static char chrBuf[100];
-    static unsigned char chrCnt=0;
-    signed short sData[4];
-    unsigned char i;
+    // char chr;
+    // float a[3],w[3],Angle[3],h[3];
+    // static char chrBuf[100];
+    // static unsigned char chrCnt=0;
+    // signed short sData[4];
+    // unsigned char i;
     //uart_close(variables)
     int fd_close;
-
 
     //uart_open(functions)
     fd_open = open(pathname_open, O_RDWR|O_NOCTTY);
@@ -155,6 +190,7 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
+    FILE *fp;
 	fp = fopen("Record.txt","w");
 
     while(1)
@@ -168,48 +204,54 @@ int main(void)
             fprintf(stderr,"uart read failed!\n");
             exit(EXIT_FAILURE);
         }
-		for (int i=0;i<ret;i++) 
+
+        for (int i=0;i<ret;i++) 
         {
             fprintf(fp,"%2X ",r_buf[i]);
-            //parsedata(function)
-
-            time_t now;
-            chrBuf[chrCnt++]=r_buf[i];
-            if (chrCnt<11) 
-                // break;
-            if ((chrBuf[0]!=0x55)||((chrBuf[1]&0x50)!=0x50)) 
-            {
-                printf("Error:%x %x\r\n",chrBuf[0],chrBuf[1]);
-                memcpy(&chrBuf[0],&chrBuf[1],10);
-                chrCnt--;
-                // break;
-            }
-            memcpy(&sData[0],&chrBuf[2],8);
-            switch(chrBuf[1])
-            {
-                case 0x51:
-                    for (i=0;i<3;i++) a[i] = (float)sData[i]/32768.0*16.0;
-                    time(&now);
-                    printf("\r\nT:%s a:%6.3f %6.3f %6.3f ",asctime(localtime(&now)),a[0],a[1],a[2]);
-                    
-                    break;
-                case 0x52:
-                    for (i=0;i<3;i++) w[i] = (float)sData[i]/32768.0*2000.0;
-                    printf("w:%7.3f %7.3f %7.3f ",w[0],w[1],w[2]);					
-                    break;
-                case 0x53:
-                    for (i=0;i<3;i++) Angle[i] = (float)sData[i]/32768.0*180.0;
-                    printf("A:%7.3f %7.3f %7.3f ",Angle[0],Angle[1],Angle[2]);
-                    break;
-                case 0x54:
-                    for (i=0;i<3;i++) h[i] = (float)sData[i];
-                    printf("h:%4.0f %4.0f %4.0f ",h[0],h[1],h[2]);
-                    
-                    break;
-            }		
-            chrCnt=0;		
+            ParseData(r_buf[i]);
         }
         usleep(1000);
+        // for (int i=0;i<ret;i++) 
+        // {
+        //     fprintf(fp,"%2X ",r_buf[i]);
+        //     //parsedata(function)
+        //     time_t now;
+        //     chrBuf[chrCnt++]=r_buf[i];
+        //     if (chrCnt<11) 
+        //         //return;
+        //     if ((chrBuf[0]!=0x55)||((chrBuf[1]&0x50)!=0x50)) 
+        //     {
+        //         printf("Error:%x %x\r\n",chrBuf[0],chrBuf[1]);
+        //         memcpy(&chrBuf[0],&chrBuf[1],10);
+        //         chrCnt--;
+        //         //return;
+        //     }
+        //     memcpy(&sData[0],&chrBuf[2],8);
+        //     switch(chrBuf[1])
+        //     {
+        //         case 0x51:
+        //             for (i=0;i<3;i++) a[i] = (float)sData[i]/32768.0*16.0;
+        //             time(&now);
+        //             printf("\r\nT:%s a:%6.3f %6.3f %6.3f ",asctime(localtime(&now)),a[0],a[1],a[2]);
+                    
+        //             break;
+        //         case 0x52:
+        //             for (i=0;i<3;i++) w[i] = (float)sData[i]/32768.0*2000.0;
+        //             printf("w:%7.3f %7.3f %7.3f ",w[0],w[1],w[2]);					
+        //             break;
+        //         case 0x53:
+        //             for (i=0;i<3;i++) Angle[i] = (float)sData[i]/32768.0*180.0;
+        //             printf("A:%7.3f %7.3f %7.3f ",Angle[0],Angle[1],Angle[2]);
+        //             break;
+        //         case 0x54:
+        //             for (i=0;i<3;i++) h[i] = (float)sData[i];
+        //             printf("h:%4.0f %4.0f %4.0f ",h[0],h[1],h[2]);
+                    
+        //             break;
+        //     }		
+        //     chrCnt=0;		
+        // }
+        // usleep(1000);
     }
 
     // uart_close(function)

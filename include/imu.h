@@ -139,7 +139,7 @@ int recv_data(int fd, char* recv_buffer,int length)
 	return length;
 }
 
-float ParseData(char chr)
+void ParseData(char chr)
 {
     float a[3],w[3],Angle[3],h[3];
     static char chrBuf[100];
@@ -177,6 +177,5 @@ float ParseData(char chr)
 					break;
 		}		
 		chrCnt=0;
-
-    return w[2]; 		
+		
 }
