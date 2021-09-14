@@ -15,6 +15,8 @@
 #include <motionControl.h>
 #include <Eigen/Core>
 #include <js.h>
+#define PI 3.1415926
+// #include <imu.h>
 #define _JOYSTICK 1
 #define THREAD1_ENABLE 1
 #define THREAD2_ENABLE 1
@@ -111,7 +113,7 @@ void *thread3_func(void *data) // update robot state
 {// Port init start
     set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
     dxl_init();
-    set_operation_mode(3); //3 position control; 0 current control
+    set_operation_mode(0); //3 position control; 0 current control
     torque_enable();
     while(mc.initFlag==false);
     struct timeval startTime3, endTime3;
@@ -126,37 +128,38 @@ void *thread3_func(void *data) // update robot state
 		// get_velocity(present_velocity);
 		// get_torque(present_torque);
         get_position(present_position);
-
         get_velocity(present_velocity);
-        Vector<float, 12> temp_jointCmdPos, temp_jointCmdVel;
+        // mc.imu();
         for(uint8_t joints=0; joints<12; joints++)
         {
             mc.jointPresentPos(joints) = present_position[joints];
             mc.jointPresentVel(joints) = present_velocity[joints];
-            temp_jointCmdPos(joints) = mc.jointCmdPos[joints];
-            temp_jointCmdVel(joints) = mc.jointCmdVel[joints];
         }
-        // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
-        // cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
-        // cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
-        // cout<<"jointCmdVel: "<<temp_jointCmdVel.transpose()<<endl;
-        Vector<float, 12> temp_motorCmdTorque;
-        temp_motorCmdTorque = 5 * (temp_jointCmdPos - mc.jointPresentPos) + 0.2 * (temp_jointCmdVel - mc.jointPresentVel);
-        float motorCmdTorque[12];
-        for(uint8_t joints=0; joints<12; joints++)
-        {
-            motorCmdTorque[joints] = temp_motorCmdTorque(joints);
-        }
-        //set_torque(motorCmdTorque);
-
-        set_position(mc.jointCmdPos);
+        mc.pid();
+        set_torque(mc.motorCmdTorque);
+        //set_position(mc.jointCmdPos);
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
 
-        ofstream f("data.txt", ios::app);
-	    f<<mc.jointPresentPos(0)<<" "<<mc.jointPresentPos(1)<<" "<<mc.jointPresentPos(2)<<" "<<mc.jointPresentPos(3)<<" "<<mc.jointPresentPos(4)<<" "<<mc.jointPresentPos(5)<<" "<<mc.jointPresentPos(6)<<" "<<mc.jointPresentPos(7)<<" "<<mc.jointPresentPos(8)<<" "<<mc.jointPresentPos(9)<<" "<<mc.jointPresentPos(10)<<" "<<mc.jointPresentPos(11)<<endl;
-        f.close();
-
+        // ofstream f("data.txt", ios::app);
+	    // f<<mc.jointPresentPos(0)<<" "<<mc.jointPresentPos(1)<<" "<<mc.jointPresentPos(2)<<" "<<mc.jointPresentPos(3)<<" "<<mc.jointPresentPos(4)<<" "<<mc.jointPresentPos(5)<<" "<<mc.jointPresentPos(6)<<" "<<mc.jointPresentPos(7)<<" "<<mc.jointPresentPos(8)<<" "<<mc.jointPresentPos(9)<<" "<<mc.jointPresentPos(10)<<" "<<mc.jointPresentPos(11)<<endl;
+        // f.close();
+        float angle[12] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        if (mc.joint_pre_pos(0) > PI/9 || mc.joint_pre_pos(0) < -PI/9 || mc.joint_pre_pos(3) > PI/9 || mc.joint_pre_pos(3) < -PI/9 || mc.joint_pre_pos(6) > PI/9 || mc.joint_pre_pos(6) < -PI/9 || mc.joint_pre_pos(9) > PI/9 || mc.joint_pre_pos(9) < -PI/9)
+        {
+            set_torque(angle);
+            break;
+        }
+        if (mc.joint_pre_pos(1) > PI/6 || mc.joint_pre_pos(1) < -PI*2/9 || mc.joint_pre_pos(4) > PI/6 || mc.joint_pre_pos(4) < -PI*2/9 || mc.joint_pre_pos(7) > PI/6 || mc.joint_pre_pos(7) < -PI*2/9 || mc.joint_pre_pos(10) > PI/6 || mc.joint_pre_pos(10) < -PI*2/9)
+        {
+            set_torque(angle);
+            break;
+        }
+        if (mc.joint_pre_pos(2) > PI/2 || mc.joint_pre_pos(2) < -PI/2 || mc.joint_pre_pos(5) > PI/2 || mc.joint_pre_pos(5) < -PI/2 || mc.joint_pre_pos(8) > PI/2 || mc.joint_pre_pos(8) < -PI/2 || mc.joint_pre_pos(11) > PI/2 || mc.joint_pre_pos(11) < -PI/2)
+        {
+            set_torque(angle);
+            break;
+        }
         //cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
     }
