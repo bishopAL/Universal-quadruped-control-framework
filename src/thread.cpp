@@ -15,7 +15,7 @@
 #include <motionControl.h>
 #include <Eigen/Core>
 #include <js.h>
-#include <imu.h>
+//#include <imu.h>
 
 #define PI 3.1415926
 #define _JOYSTICK 1
@@ -100,46 +100,46 @@ void *thread2_func(void *data) // send velocity & IMU data
     {
         gettimeofday(&startTime2,NULL);
         
-        /* imu start */
-        char r_buf[1024];
-        bzero(r_buf,1024);
+        // /* imu start */
+        // char r_buf[1024];
+        // bzero(r_buf,1024);
 
-        fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
-        if(fd == -1)
-        {
-            fprintf(stderr,"uart_open error\n");
-            exit(EXIT_FAILURE);
-        }
+        // fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
+        // if(fd == -1)
+        // {
+        //     fprintf(stderr,"uart_open error\n");
+        //     exit(EXIT_FAILURE);
+        // }
 
-        if(uart_set(fd,BAUD,8,'N',1) == -1)
-        {
-            fprintf(stderr,"uart set failed!\n");
-            exit(EXIT_FAILURE);
-        }
+        // if(uart_set(fd,BAUD,8,'N',1) == -1)
+        // {
+        //     fprintf(stderr,"uart set failed!\n");
+        //     exit(EXIT_FAILURE);
+        // }
 
-        FILE *fp;
-        fp = fopen("Record.txt","w");
-        while(1)
-        {
-            ret = recv_data(fd,r_buf,44);
-            if(ret == -1)
-            {
-                fprintf(stderr,"uart read failed!\n");
-                exit(EXIT_FAILURE);
-            }
-            for (int i=0;i<ret;i++) {fprintf(fp,"%2X ",r_buf[i]);ParseData(r_buf[i]);}
-            usleep(1000);
-        }
+        // FILE *fp;
+        // fp = fopen("Record.txt","w");
+        // while(1)
+        // {
+        //     ret = recv_data(fd,r_buf,44);
+        //     if(ret == -1)
+        //     {
+        //         fprintf(stderr,"uart read failed!\n");
+        //         exit(EXIT_FAILURE);
+        //     }
+        //     for (int i=0;i<ret;i++) {fprintf(fp,"%2X ",r_buf[i]);ParseData(r_buf[i]);}
+        //     usleep(1000);
+        // }
 
-        ret = uart_close(fd);
-        if(ret == -1)
-        {
-            fprintf(stderr,"uart_close error\n");
-            exit(EXIT_FAILURE);
-        }
+        // ret = uart_close(fd);
+        // if(ret == -1)
+        // {
+        //     fprintf(stderr,"uart_close error\n");
+        //     exit(EXIT_FAILURE);
+        // }
 
-        exit(EXIT_SUCCESS);
-        /* imu end */
+        // exit(EXIT_SUCCESS);
+        // /* imu end */
 
         gettimeofday(&endTime2,NULL);
         double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
@@ -177,44 +177,51 @@ void *thread3_func(void *data) // update robot state
         }
         mc.pid();
         mc.vmc();
-        float k = 0.8;
-        if (mc.stanceFlag[0] == 0)
-        {
-            for(uint8_t joints=0; joints<3; joints++)
-            {
-                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-            }
-            for(uint8_t joints=3; joints<9; joints++)
-            {
-                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-            }
-            for(uint8_t joints=9; joints<12; joints++)
-            {
-                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-            }
-        }
-        else
-        {
-            for(uint8_t joints=0; joints<3; joints++)
-            {
-                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-            }
-            for(uint8_t joints=3; joints<9; joints++)
-            {
-                mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-            }
-            for(uint8_t joints=9; joints<12; joints++)
-            {
-                mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-            }
-        }
-
+        float k = 0.0;
+        // if (mc.stanceFlag[0] == 0)
+        // {
+        //     for(uint8_t joints=0; joints<3; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+        //     }
+        //     for(uint8_t joints=3; joints<9; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+        //     }
+        //     for(uint8_t joints=9; joints<12; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+        //     }
+        // }
+        // else
+        // {
+        //     for(uint8_t joints=0; joints<3; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+        //     }
+        //     for(uint8_t joints=3; joints<9; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
+        //     }
+        //     for(uint8_t joints=9; joints<12; joints++)
+        //     {
+        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
+        //     }
+        // }
         for(uint8_t joints=0; joints<12; joints++)
         {
-            mc.motorCmdTorque[joints] = 0.8 * mc.pid_motortorque[joints] + 0.2 * mc.jacobian_motortorque[joints];
+            mc.motorCmdTorque[joints] = mc.pid_motortorque[joints] + k * mc.jacobian_motortorque[joints];
         }
+        
         set_torque(mc.motorCmdTorque);
-        //set_position(mc.jointCmdPos);
+        // cout << "present zitai :" << mc.presentCoMVelocity(0) <<" "<< mc.presentCoMVelocity(1) << " " << mc.presentCoMVelocity(2) << endl;
+        // cout << "target zitai :"<<mc.targetCoMVelocity(0) <<" "<< mc.targetCoMVelocity(1) << " " << mc.targetCoMVelocity(2) << endl;
+        // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
+         cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
+        
+
+        // set_position(mc.jointCmdPos);
+
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
 
@@ -248,7 +255,7 @@ void *thread4_func(void *data) // motion control, update goal position
     Matrix<float, 4, 3> initPos; 
 	initPos<< 3.0, 0.0, -225.83, 3.0, 0.0, -225.83, -20.0, 0.0, -243.83, -20.0, 0.0, -243.83;
 	Vector<float, 3> tCV;
-	tCV<< 50.0, 0.0, 0.0;
+	tCV<< 0.0, 0.0, 0.0;
 	mc.setInitPos(initPos);
 	mc.setCoMVel(tCV);
     mc.inverseKinematics();
@@ -267,6 +274,28 @@ void *thread4_func(void *data) // motion control, update goal position
         // cout<<"thread4: "<<timeUse<<endl;
         usleep(1/loopRate4*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
+
+    // struct timeval startTime4, endTime4;
+    // Matrix<float, 4, 3> initPos; 
+    // /* need to be changed !!!!!!! */
+	// initPos<< 3.0, 0.0, -225.83, 3.0, 0.0, -225.83, -20.0, 0.0, -243.83, -20.0, 0.0, -243.83;
+	// Vector<float, 3> tCV;
+	// tCV<< 0.0, 0.0, 0.0;
+	// mc.setInitPos(initPos);
+	// //mc.setCoMVel(tCV);
+    // mc.creepingIK();
+    // mc.initFlag = true;
+    // usleep(3e6);
+    // while(1)
+    // {
+    //     gettimeofday(&startTime4,NULL);
+    //     mc.creepingGait(50,0,0);
+    //     mc.creepingIK();
+    //     gettimeofday(&endTime4,NULL);
+    //     double timeUse = 1000000*(endTime4.tv_sec - startTime4.tv_sec) + endTime4.tv_usec - startTime4.tv_usec;
+    //     // cout<<"thread4: "<<timeUse<<endl;
+    //     usleep(1/loopRate4*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
+    // }
 }
 
 void thread_init()

@@ -6,6 +6,7 @@ using namespace Eigen;
 
 MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
 {
+    // The parameters for quadruped gait
     initFlag = false;
     timePeriod = tP;
     timeForGaitPeriod = tFGP;
@@ -19,6 +20,21 @@ MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
     width = 132.0;
     length = 172.0;  
     shoulderPos << width/2, length/2, width/2, -length/2, -width/2, length/2, -width/2, -length/2;  // X-Y: LF, RF, LH, RH
+
+    // The parameters for creeping gait
+    L1_creep = 132.0;
+    L2_creep = 112.0;
+    L3_creep = 20.0;   // unknown
+    H_onestep = 20.0;
+    k1 = 0.25;
+    k2 = 0.50;
+    k3 = 0.25;
+    initPosS2L << 112.0, 132.0, -20.0, 112.0, -132.0, -20.0, -112.0, 132.0, -20.0, -112.0, -132.0, -20.0;  //unknown z
+    initPosC2L << 198.0, 198.0, 198.0, -198.0, -198.0, 198.0, -198.0, -198.0;
+    initPosC2S << 86.0, 66.0, 86.0, -66.0, -86.0, 66.0, -86.0, -66.0;
+    L_diag = sqrt(initPosC2L(0,0)*initPosC2L(0,0) + initPosC2L(0,1)*initPosC2L(0,1));
+    beta_diag = atan(initPosC2L(0,0)/initPosC2L(0,1));
+    alpha_diag = PI / 2 - beta_diag;
 }
 
 void MotionControl::setInitPos(Matrix<float, 4, 3> initPosition)
@@ -116,17 +132,17 @@ void MotionControl::inverseKinematics()
     float b2[4] = {0};
     float c2[4] = {0};
     static int times = 0;
-    motorInitPos[0] = 0.3145;
-    motorInitPos[1] = 0.2378;
+    motorInitPos[0] = 0.6273;
+    motorInitPos[1] = 0.7547;
     motorInitPos[2] = 0.7854;
-    motorInitPos[3] = 0.6888;
-    motorInitPos[4] = 0.9050;
+    motorInitPos[3] = 0.678;
+    motorInitPos[4] = 0.8482;
     motorInitPos[5] = -0.7854;
-    motorInitPos[6] = 0.9234;
-    motorInitPos[7] = -0.5906;
+    motorInitPos[6] = 0.9081;
+    motorInitPos[7] = -0.517;
     motorInitPos[8] = -0.7854;
-    motorInitPos[9] = 0.4663;
-    motorInitPos[10] = -0.2424;
+    motorInitPos[9] = -0.0568;
+    motorInitPos[10] = -0.3989;
     motorInitPos[11] = 0.7854;
 
     if(times!=0)
@@ -296,6 +312,9 @@ void MotionControl::updateState()
 
 void MotionControl::vmc()
 {
+    float kx = 0.4;
+    float ky = 0.4;
+    // float kw = 0.2;
     if (stanceFlag[0] == 0)
     {
         float xf= leg2CoMPrePos(0, 0);
@@ -310,32 +329,29 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
-        // Matrix<float, 3, 3>temp_Matrix;
-        // temp_Matrix << jacobian(3 ,0), jacobian(3 ,1), jacobian(3 ,2),
-        //                jacobian(3 ,3), jacobian(3 ,4), jacobian(3 ,5),
-        //                jacobian(3 ,6), jacobian(3 ,7), jacobian(3 ,8);
-        // Vector<float, 3>temp_vel;
-        // temp_vel(0) = (jointPresentVel(9) - jointPresentVel(10))/2;
-        // temp_vel(1) = (jointPresentVel(9) + jointPresentVel(10))/2;
-        // temp_vel(2) = -jointPresentVel(11);
-        // Vector<float, 3>temp_comvel;
-        // temp_comvel = -temp_vel;
-        // presentCoMVelocity[0] = temp_comvel(0);
-        // presentCoMVelocity[1] = temp_comvel(1);
-        // float kx = 0.02;
-        // float ky = 0.001;
-        // float kw = 0.02;
-        // float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
-        // float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        Matrix<float, 3, 3>temp_Matrix;
+        temp_Matrix << jacobian(3 ,0), jacobian(3 ,1), jacobian(3 ,2),
+                       jacobian(3 ,3), jacobian(3 ,4), jacobian(3 ,5),
+                       jacobian(3 ,6), jacobian(3 ,7), jacobian(3 ,8);
+        Vector<float, 3>temp_vel;
+        temp_vel(0) = (jointPresentVel(9) - jointPresentVel(10))/2;
+        temp_vel(1) = (jointPresentVel(9) + jointPresentVel(10))/2;
+        temp_vel(2) = -jointPresentVel(11);
+        Vector<float, 3>temp_comvel;
+        temp_comvel = -temp_vel;
+        presentCoMVelocity[0] = temp_comvel(0);
+        presentCoMVelocity[1] = temp_comvel(1);
+        float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
+        float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
-        float Fx = 0.0;
-        float Fy = 0.0;
+        // float Fx = 0.0;
+        // float Fy = 0.0;
         float tao_z = 0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
         double u=0.7;
         double k=2;
-        a << -1, 0, 0, 1, 0, 0, 
-            0, -1, 0, 0, 1, 0, 
+        a << 1, 0, 0, 1, 0, 0, 
+            0, 1, 0, 0, 1, 0, 
             1, 1, -sqrt(2)*u/k, 0, 0, 0, 
             0, 0, 0, 1, 1, -sqrt(2)*u/k;
         b << Fx, Fy, 0, 0;
@@ -354,32 +370,29 @@ void MotionControl::vmc()
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
-        // Matrix<float, 3, 3>temp_Matrix;
-        // temp_Matrix << jacobian(2 ,0), jacobian(2 ,1), jacobian(2 ,2),
-        //                jacobian(2 ,3), jacobian(2 ,4), jacobian(2 ,5),
-        //                jacobian(2 ,6), jacobian(2 ,7), jacobian(2 ,8);
-        // Vector<float, 3>temp_vel
-        // temp_vel(0) = (jointPresentVel(6) - jointPresentVel(7))/2;
-        // temp_vel(1) = (jointPresentVel(6) + jointPresentVel(7))/2;
-        // temp_vel(2) = -jointPresentVel(8);
-        // Vector<float, 3>temp_comvel;
-        // temp_comvel = -temp_vel;
-        // presentCoMVelocity[0] = temp_comvel(0);
-        // presentCoMVelocity[1] = temp_comvel(1);
-        // float kx = 0.02;
-        // float ky = 0.02;
-        // float kw = 0.02;
-        // float Fx = kx * (presentCoMVelocity[0] - targetCoMVelocity[0]);
-        // float Fy = ky * (presentCoMVelocity[1] - targetCoMVelocity[1]);
+        Matrix<float, 3, 3>temp_Matrix;
+        temp_Matrix << jacobian(2 ,0), jacobian(2 ,1), jacobian(2 ,2),
+                       jacobian(2 ,3), jacobian(2 ,4), jacobian(2 ,5),
+                       jacobian(2 ,6), jacobian(2 ,7), jacobian(2 ,8);
+        Vector<float, 3>temp_vel;
+        temp_vel(0) = (jointPresentVel(6) - jointPresentVel(7))/2;
+        temp_vel(1) = (jointPresentVel(6) + jointPresentVel(7))/2;
+        temp_vel(2) = -jointPresentVel(8);
+        Vector<float, 3>temp_comvel;
+        temp_comvel = -temp_vel;
+        presentCoMVelocity[0] = temp_comvel(0);
+        presentCoMVelocity[1] = temp_comvel(1);
+        float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
+        float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
-        float Fx = 0.0;
-        float Fy = 0.0;
+        // float Fx = 0.0;
+        // float Fy = 0.0;
         float tao_z = 0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
         double u=0.7;
         double k=2;
-        a << -1, 0, 0, 1, 0, 0, 
-            0, -1, 0, 0, 1, 0, 
+        a << 1, 0, 0, 1, 0, 0, 
+            0, 1, 0, 0, 1, 0, 
             1, 1, -sqrt(2)*u/k, 0, 0, 0, 
             0, 0, 0, 1, 1, -sqrt(2)*u/k;
         b << Fx, Fy, 0, 0;
@@ -413,7 +426,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        // cout<<"stance left: "<<temp_Force<<endl;
+        cout<<"stance left: "<<temp_Force<<endl;
         jacobian_torque.head(3) = temp_torque.head(3);
         jacobian_torque.tail(3) = temp_torque.tail(3);
         jacobian_torque.segment(3, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -431,23 +444,23 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        // cout<<"stance right: "<<temp_Force << endl;
+        cout<<"stance right: "<<temp_Force << endl;
         jacobian_torque.head(3) << 0.0, 0.0, 0.0;
         jacobian_torque.tail(3) << 0.0, 0.0, 0.0;
         jacobian_torque.segment(3, 6) = temp_torque;
     }   
     jacobian_motortorque[0] = 0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
     jacobian_motortorque[1] = -0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
-    jacobian_motortorque[2] = jacobian_torque(2);
+    jacobian_motortorque[2] = -jacobian_torque(2);
     jacobian_motortorque[3] = 0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
     jacobian_motortorque[4] = -0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
-    jacobian_motortorque[5] = jacobian_torque(5);
+    jacobian_motortorque[5] = -jacobian_torque(5);
     jacobian_motortorque[6] = 0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
     jacobian_motortorque[7] = -0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
-    jacobian_motortorque[8] = jacobian_torque(8);
+    jacobian_motortorque[8] = -jacobian_torque(8);
     jacobian_motortorque[9] = 0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
     jacobian_motortorque[10] = -0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
-    jacobian_motortorque[11] = jacobian_torque(11);
+    jacobian_motortorque[11] = -jacobian_torque(11);
        
 }
 
@@ -487,7 +500,7 @@ void MotionControl::pid()
         temp_jointCmdPos(joints) = jointCmdPos[joints];
         temp_jointCmdVel(joints) = jointCmdVel[joints];
     }
-    // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
+    // cout<<"jointPresentPos: "<<jointPresentPos.transpose()<<endl;
     // cout<<"yawVelocity: "<<mc.yawVelocity<<endl;
     //cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
     // cout<<"jointCmdPos: "<<temp_jointCmdPos.transpose()<<endl;
@@ -501,201 +514,217 @@ void MotionControl::pid()
     }
 }
 
+
+
 // creeping gait generated by X,Y,yaw from via points(position planning, independent part)
 void MotionControl::creepingGait(float X_tar, float Y_tar, float Yaw_tar) 
 {
-    // // variables
-    // float k1 = 0.25;
-    // float k2 = 0.50;
-    // float k3 = 0.25;
-    
-    // // record the cycle times
-    // int count_forward = 1;
-    // int num_forward = 3;
-    
-    // float L_diag;  // half of body diagonal size
-    // float beta_diag, alpha_diag; // structural angle of the body
-    // float v_body_x, v_body_y;    // the velocity of CoM
-    // float v_leg[4][2];  // the velocity of 4 legs
-    // float endPosition[4][2];  // the final feet position after one gait cycle
-    
-    // timeForGaitPeriod = 0.5;
-    // timeOneSwingPeriod = 0.25;
+    // some structural calculation
+    Yaw_rad = Yaw_tar * PI / 180.0;
+    endPosition[0][0] = X_tar + L_diag*sin(beta_diag - Yaw_rad);
+    endPosition[0][1] = Y_tar + L_diag*cos(beta_diag - Yaw_rad);
+    endPosition[1][0] = X_tar - L_diag*cos(alpha_diag - Yaw_rad);
+    endPosition[1][1] = Y_tar + L_diag*sin(alpha_diag - Yaw_rad);
+    endPosition[2][0] = X_tar + L_diag*cos(alpha_diag - Yaw_rad);
+    endPosition[2][1] = Y_tar - L_diag*sin(alpha_diag - Yaw_rad);
+    endPosition[3][0] = X_tar - L_diag*sin(beta_diag - Yaw_rad);
+    endPosition[3][1] = Y_tar - L_diag*cos(beta_diag - Yaw_rad);
 
-    // Matrix<float, 4, 3> initPosS2L;  // init position from Shoulder to Leg
-    // initPosS2L << 112.0, 132.0, -20.0, 112.0, -132.0, -20.0, -112.0, 132.0, -20.0, -112.0, -132.0, -20.0;  //unknown z
-    // Matrix<float, 4, 2> initPosC2L;  // init position from CoM to Leg
-    // initPosC2L << 198.0, 198.0, 198.0, -198.0, -198.0, 198.0, -198.0, -198.0;
-    // Matrix<float, 4, 2> initPosC2S;  // init position from CoM to Shoulder
-    // initPosC2S << 86.0, 66.0, 86.0, -66.0, -86.0, 66.0, -86.0, -66.0;
+    v_body_x = X_tar / timeForGaitPeriod;
+    v_body_y = Y_tar / timeForGaitPeriod;
+    for(int leg_num1 = 0; leg_num1 < 4; leg_num1++)
+    {
+        v_leg[leg_num1][0] = (endPosition[leg_num1][0] - initPosC2L(leg_num1,0)) / timeOneSwingPeriod;
+        v_leg[leg_num1][1] = (endPosition[leg_num1][1] - initPosC2L(leg_num1,1)) / timeOneSwingPeriod;
+    }
 
-    // float p_w2c[4][3];  // The relative position from world to CoM
-    // float p_c2s[4][3];  // The relative position from CoM to Shoulder
-    // float p_w2f[4][3];  // The relative position from world to leg
+    // core creeping gait codes
+    // always changing variables
+    yawCreep = Yaw_rad / timeForGaitPeriod * timePresent;
+    for(int leg_num2 = 0; leg_num2 < 4; leg_num2++)
+    {
+        // CoM planning(constant speed)
+        p_w2c[leg_num2][0] = v_body_x * timePresent;
+        p_w2c[leg_num2][1] = v_body_y * timePresent;
+        p_w2c[leg_num2][2] = L3_creep;
+        p_c2s[leg_num2][0] = initPosC2S(leg_num2,0);
+        p_c2s[leg_num2][1] = initPosC2S(leg_num2,1);
+        p_c2s[leg_num2][2] = 0.0;
+    }
 
-    // float L_onestep = 50.0;  // The distance of one step
-    // float H_onestep = 20.0;  // The height of one step
-    // float v_x;
-    // float Yaw_rad;      // The rad of yaw angle
-    
-    // int status = 1;   // for switching state
+    // leg trajectory planning
+    if(timePresent < (0.5 * timeForGaitPeriod))
+    {
+        //LF
+        p_w2f[0][0] = initPosC2L(0,0) + v_leg[0][0] * timePresent;
+        p_w2f[0][1] = initPosC2L(0,1) + v_leg[0][1] * timePresent;
+        if(timePresent <= k1 * timeOneSwingPeriod)
+        {
+            p_w2f[0][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * timePresent;
+        }
+        else if(timePresent <= (k1+k2) * timeOneSwingPeriod)
+        {
+            p_w2f[0][2] = H_onestep;
+        }
+        else
+        {
+            p_w2f[0][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent-(k1+k2)*timeOneSwingPeriod) + H_onestep;
+        }
+        //RF
+        p_w2f[1][0] = initPosC2L(1,0);
+        p_w2f[1][1] = initPosC2L(1,1);
+        p_w2f[1][2] = 0;
+        //LH
+        p_w2f[2][0] = initPosC2L(2,0);
+        p_w2f[2][1] = initPosC2L(2,1);
+        p_w2f[2][2] = 0;
+        //RH
+        p_w2f[3][0] = initPosC2L(3,0) + v_leg[3][0] * timePresent;
+        p_w2f[3][1] = initPosC2L(3,1) + v_leg[3][1] * timePresent;
+        if(timePresent <= k1 * timeOneSwingPeriod)
+        {
+            p_w2f[3][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * timePresent;
+        }
+        else if(timePresent <= (k1+k2) * timeOneSwingPeriod)
+        {
+            p_w2f[3][2] = H_onestep;
+        }
+        else
+        {
+            p_w2f[3][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent-(k1+k2)*timeOneSwingPeriod) + H_onestep;
+        }
 
-    
-    // // some structural calculation
-    // Yaw_rad = Yaw_tar * PI / 180.0;
-    // L_diag = sqrt(initPosC2L(0,0)*initPosC2L(0,0) + initPosC2L(0,1)*initPosC2L(0,1));
-    // beta_diag = atan(initPosC2L(0,0)/initPosC2L(0,1));
-    // alpha_diag = PI / 2 - beta_diag;
-
-    // endPosition[0][0] = X_tar + L_diag*sin(beta_diag - Yaw_rad);
-    // endPosition[0][1] = Y_tar + L_diag*cos(beta_diag - Yaw_rad);
-    // endPosition[1][0] = X_tar - L_diag*cos(alpha_diag - Yaw_rad);
-    // endPosition[1][1] = Y_tar + L_diag*sin(alpha_diag - Yaw_rad);
-    // endPosition[2][0] = X_tar + L_diag*cos(alpha_diag - Yaw_rad);
-    // endPosition[2][1] = Y_tar - L_diag*sin(alpha_diag - Yaw_rad);
-    // endPosition[3][0] = X_tar - L_diag*sin(beta_diag - Yaw_rad);
-    // endPosition[3][1] = Y_tar - L_diag*cos(beta_diag - Yaw_rad);
-
-    // v_body_x = X_tar / timeForGaitPeriod;
-    // v_body_y = Y_tar / timeForGaitPeriod;
-    // for(int leg_num1 = 0; leg_num1 < 4; leg_num1++)
-    // {
-    //     v_leg[leg_num1][0] = (endPosition[leg_num1][0] - initPosC2L(leg_num1,0)) / timeOneSwingPeriod;
-    //     v_leg[leg_num1][1] = (endPosition[leg_num1][1] - initPosC2L(leg_num1,1)) / timeOneSwingPeriod;
-    // }
-
-    // // core creeping gait codes
-    // // always changing variables
-    // yawCreep = Yaw_rad / timeForGaitPeriod * timePresent;
-    // for(int leg_num2 = 0; leg_num2 < 4; leg_num2++)
-    // {
-    //     // CoM planning(Uniform speed)
-    //     p_w2c[leg_num2][0] = v_body_x * timePresent;
-    //     p_w2c[leg_num2][1] = v_body_y * timePresent;
-    //     p_w2c[leg_num2][2] = L3_creep;
-    //     p_c2s[leg_num2][0] = initPosC2S(leg_num2,0);
-    //     p_c2s[leg_num2][1] = initPosC2S(leg_num2,1);
-    //     p_c2s[leg_num2][2] = 0.0;
-    // }
-
-    // // leg trajectory planning
-    // if(timePresent < (0.5 * timeForGaitPeriod))
-    // {
-    //     //LF
-    //     p_w2f[0][0] = initPosC2L(0,0) + v_leg[0][0] * timePresent;
-    //     p_w2f[0][1] = initPosC2L(0,1) + v_leg[0][1] * timePresent;
-    //     if(timePresent <= k1 * timeOneSwingPeriod)
-    //     {
-    //         p_w2f[0][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * timePresent;
-    //     }
-    //     else if(timePresent <= (k1+k2) * timeOneSwingPeriod)
-    //     {
-    //         p_w2f[0][2] = H_onestep;
-    //     }
-    //     else
-    //     {
-    //         p_w2f[0][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent-(k1+k2)*timeOneSwingPeriod) + H_onestep;
-    //     }
-    //     //RF
-    //     p_w2f[1][0] = initPosC2L(1,0);
-    //     p_w2f[1][1] = initPosC2L(1,1);
-    //     p_w2f[1][2] = 0;
-    //     //LH
-    //     p_w2f[2][0] = initPosC2L(2,0);
-    //     p_w2f[2][1] = initPosC2L(2,1);
-    //     p_w2f[2][2] = 0;
-    //     //RH
-    //     p_w2f[3][0] = initPosC2L(3,0) + v_leg[3][0] * timePresent;
-    //     p_w2f[3][1] = initPosC2L(3,1) + v_leg[3][1] * timePresent;
-    //     if(timePresent <= k1 * timeOneSwingPeriod)
-    //     {
-    //         p_w2f[3][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * timePresent;
-    //     }
-    //     else if(timePresent <= (k1+k2) * timeOneSwingPeriod)
-    //     {
-    //         p_w2f[3][2] = H_onestep;
-    //     }
-    //     else
-    //     {
-    //         p_w2f[3][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent-(k1+k2)*timeOneSwingPeriod) + H_onestep;
-    //     }
-
-    //     // calculation from Shoulder to leg
-    //     for(int leg_num3 = 0; leg_num3 < 4; leg_num3++)
-    //     {
-    //         legCmdVia(leg_num3,0) = (p_w2f[leg_num3][0] - p_w2c[leg_num3][0]) * cos(yawCreep) + (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * sin(yawCreep) - p_c2s[leg_num3][0];
-    //         legCmdVia(leg_num3,1) = (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * cos(yawCreep) + (p_w2c[leg_num3][0] - p_w2f[leg_num3][0]) * sin(yawCreep) - p_c2s[leg_num3][1];
-    //         legCmdVia(leg_num3,2) = p_w2f[leg_num3][2] - p_w2c[leg_num3][2] - p_c2s[leg_num3][2];
-    //     }	
-    // }
-    // else
-    // {            
-    //     // leg trajectory planning
-    //     //LF
-    //     p_w2f[0][0] = endPosition[0][0];
-    //     p_w2f[0][1] = endPosition[0][1];
-    //     p_w2f[0][2] = 0.0;
-    //     //RF
-    //     p_w2f[1][0] = initPosC2L(1,0) + v_leg[1][0] * (timePresent - 0.5 * timeForGaitPeriod);
-    //     p_w2f[1][1] = initPosC2L(1,1) + v_leg[1][1] * (timePresent - 0.5 * timeForGaitPeriod);
-    //     if(timePresent <= (0.5 * timeForGaitPeriod + k1 * timeOneSwingPeriod))
-    //     {
-    //         p_w2f[1][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent - 0.5 * timeForGaitPeriod);
-    //     }
-    //     else if(timePresent <= (0.5 * timeForGaitPeriod + (k1+k2) * timeOneSwingPeriod))
-    //     {
-    //         p_w2f[1][2] = H_onestep;
-    //     }
-    //     else
-    //     {
-    //         p_w2f[1][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * ((timePresent - 0.5 * timeForGaitPeriod)-(k1+k2)*timeOneSwingPeriod) + H_onestep;
-    //     }
-    //     //LH
-    //     p_w2f[2][0] = initPosC2L(2,0) + v_leg[2][0] * (timePresent - 0.5 * timeForGaitPeriod);
-    //     p_w2f[2][1] = initPosC2L(2,1) + v_leg[2][1] * (timePresent - 0.5 * timeForGaitPeriod);
-    //     p_w2f[2][2] = 0;
-    //     if(timePresent <= (0.5 * timeForGaitPeriod + k1 * timeOneSwingPeriod))
-    //     {
-    //         p_w2f[2][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent - 0.5 * timeForGaitPeriod);
-    //     }
-    //     else if(timePresent <= (0.5 * timeForGaitPeriod + (k1+k2) * timeOneSwingPeriod))
-    //     {
-    //         p_w2f[2][2] = H_onestep;
-    //     }
-    //     else
-    //     {
-    //         p_w2f[2][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * ((timePresent - 0.5 * timeForGaitPeriod)-(k1+k2)*timeOneSwingPeriod) + H_onestep;
-    //     }
-    //     //RH
-    //     p_w2f[3][0] = endPosition[3][0];
-    //     p_w2f[3][1] = endPosition[3][1];
-    //     p_w2f[3][2] = 0.0;
+        // calculation from Shoulder to leg
+        for(int leg_num3 = 0; leg_num3 < 4; leg_num3++)
+        {
+            legCmdVia(leg_num3,0) = (p_w2f[leg_num3][0] - p_w2c[leg_num3][0]) * cos(yawCreep) + (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * sin(yawCreep) - p_c2s[leg_num3][0];
+            legCmdVia(leg_num3,1) = (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * cos(yawCreep) + (p_w2c[leg_num3][0] - p_w2f[leg_num3][0]) * sin(yawCreep) - p_c2s[leg_num3][1];
+            legCmdVia(leg_num3,2) = p_w2f[leg_num3][2] - p_w2c[leg_num3][2] - p_c2s[leg_num3][2];
+        }	
+    }
+    else
+    {            
+        // leg trajectory planning
+        //LF
+        p_w2f[0][0] = endPosition[0][0];
+        p_w2f[0][1] = endPosition[0][1];
+        p_w2f[0][2] = 0.0;
+        //RF
+        p_w2f[1][0] = initPosC2L(1,0) + v_leg[1][0] * (timePresent - 0.5 * timeForGaitPeriod);
+        p_w2f[1][1] = initPosC2L(1,1) + v_leg[1][1] * (timePresent - 0.5 * timeForGaitPeriod);
+        if(timePresent <= (0.5 * timeForGaitPeriod + k1 * timeOneSwingPeriod))
+        {
+            p_w2f[1][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent - 0.5 * timeForGaitPeriod);
+        }
+        else if(timePresent <= (0.5 * timeForGaitPeriod + (k1+k2) * timeOneSwingPeriod))
+        {
+            p_w2f[1][2] = H_onestep;
+        }
+        else
+        {
+            p_w2f[1][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * ((timePresent - 0.5 * timeForGaitPeriod)-(k1+k2)*timeOneSwingPeriod) + H_onestep;
+        }
+        //LH
+        p_w2f[2][0] = initPosC2L(2,0) + v_leg[2][0] * (timePresent - 0.5 * timeForGaitPeriod);
+        p_w2f[2][1] = initPosC2L(2,1) + v_leg[2][1] * (timePresent - 0.5 * timeForGaitPeriod);
+        p_w2f[2][2] = 0;
+        if(timePresent <= (0.5 * timeForGaitPeriod + k1 * timeOneSwingPeriod))
+        {
+            p_w2f[2][2] = (H_onestep / (k1 * timeOneSwingPeriod)) * (timePresent - 0.5 * timeForGaitPeriod);
+        }
+        else if(timePresent <= (0.5 * timeForGaitPeriod + (k1+k2) * timeOneSwingPeriod))
+        {
+            p_w2f[2][2] = H_onestep;
+        }
+        else
+        {
+            p_w2f[2][2] = (-H_onestep / (k1 * timeOneSwingPeriod)) * ((timePresent - 0.5 * timeForGaitPeriod)-(k1+k2)*timeOneSwingPeriod) + H_onestep;
+        }
+        //RH
+        p_w2f[3][0] = endPosition[3][0];
+        p_w2f[3][1] = endPosition[3][1];
+        p_w2f[3][2] = 0.0;
         
 
-    //     // calculation from Shoulder to leg
-    //     for(int leg_num3 = 0; leg_num3 < 4; leg_num3++)
-    //     {
-    //         legCmdVia(leg_num3,0) = (p_w2f[leg_num3][0] - p_w2c[leg_num3][0]) * cos(yawCreep) + (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * sin(yawCreep) - p_c2s[leg_num3][0];
-    //         legCmdVia(leg_num3,1) = (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * cos(yawCreep) + (p_w2c[leg_num3][0] - p_w2f[leg_num3][0]) * sin(yawCreep) - p_c2s[leg_num3][1];
-    //         legCmdVia(leg_num3,2) = p_w2f[leg_num3][2] - p_w2c[leg_num3][2] - p_c2s[leg_num3][2];
-    //     }
-    // }
+        // calculation from Shoulder to leg
+        for(int leg_num3 = 0; leg_num3 < 4; leg_num3++)
+        {
+            legCmdVia(leg_num3,0) = (p_w2f[leg_num3][0] - p_w2c[leg_num3][0]) * cos(yawCreep) + (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * sin(yawCreep) - p_c2s[leg_num3][0];
+            legCmdVia(leg_num3,1) = (p_w2f[leg_num3][1] - p_w2c[leg_num3][1]) * cos(yawCreep) + (p_w2c[leg_num3][0] - p_w2f[leg_num3][0]) * sin(yawCreep) - p_c2s[leg_num3][1];
+            legCmdVia(leg_num3,2) = p_w2f[leg_num3][2] - p_w2c[leg_num3][2] - p_c2s[leg_num3][2];
+        }
+    }
 
-    // timePresent += timePeriod;
+    timePresent += timePeriod;
 
-    // if (timePresent >= timeForGaitPeriod)
-    // {
-    //     timePresent = 0;
-    //     if(count_forward < num_forward)
-    //     {
-    //         count_forward = count_forward + 1;	
-    //     }
-    //     else
-    //     {
-    //         count_forward = 1;
-    //     // delay_ms(2000);
-    //     }
-    // }
+    if (abs(timePresent - timeForGaitPeriod - timePeriod) < 1e-4)
+    {
+        timePresent = 0.0;
+    }
+}
+
+void MotionControl::creepingIK() 
+{
+    float theta[4][3] = {0};
+    float jo_ang[4][3] = {0};
+    float M_IK[4], N_IK[4];
+
+    // creeping gait motor init angle
+    // motIniPoCreep[0] = ;
+    // motIniPoCreep[1] = ;
+    // motIniPoCreep[2] = ;
+    // motIniPoCreep[3] = ;
+    // motIniPoCreep[4] = ;
+    // motIniPoCreep[5] = ;
+    // motIniPoCreep[6] = ;
+    // motIniPoCreep[7] = ;
+    // motIniPoCreep[8] = ;
+    // motIniPoCreep[9] = ;
+    // motIniPoCreep[10] = ;
+    // motIniPoCreep[11] = ;
+
+    // intermediate transfer
+    legCmdPos(0,0) = - legCmdVia(0,1);
+    legCmdPos(0,1) = - legCmdVia(0,2);
+    legCmdPos(0,2) = legCmdVia(0,0);
+    legCmdPos(1,0) = legCmdVia(0,1);
+    legCmdPos(1,1) = - legCmdVia(0,2);
+    legCmdPos(1,2) = legCmdVia(0,0);
+    legCmdPos(2,0) = - legCmdVia(0,1);
+    legCmdPos(2,1) = - legCmdVia(0,2);
+    legCmdPos(2,2) = - legCmdVia(0,0);
+    legCmdPos(3,0) = legCmdVia(0,1);
+    legCmdPos(3,1) = - legCmdVia(0,2);
+    legCmdPos(3,2) = -legCmdVia(0,0);
+
+    // inverse kinematics
+    for(int num1 = 0; num1 < 4; num1 ++)
+    {
+        theta[num1][2] = asin((L1_creep*L1_creep + L2_creep*L2_creep + L3_creep*L3_creep - legCmdPos(num1,0)*legCmdPos(num1,0)
+         - legCmdPos(num1,1)*legCmdPos(num1,1) -legCmdPos(num1,2)*legCmdPos(num1,2))/(2*L1_creep*L2_creep));
+        M_IK[num1] = L1_creep - L2_creep * sin(theta[num1][2]);
+		N_IK[num1] = L2_creep * cos(theta[num1][2]);
+		theta[num1][0] = atan(- legCmdPos(num1,0) / legCmdPos(num1,1)) - atan(- sqrt(legCmdPos(num1,0)*legCmdPos(num1,0) + legCmdPos(num1,1)*legCmdPos(num1,1) - L3_creep*L3_creep) / L3_creep);
+		theta[num1][1] = atan(legCmdPos(num1,2) / sqrt(M_IK[num1]*M_IK[num1] + N_IK[num1]*N_IK[num1] - legCmdPos(num1,2)*legCmdPos(num1,2))) - atan(N_IK[num1]/ M_IK[num1]);
+		
+        jo_ang[num1][0] = theta[num1][0];
+		jo_ang[num1][1] = - theta[num1][1];
+		jo_ang[num1][2] = theta[num1][2]; 
+    }
+
+    /* need to be tested !!!!!!!!!!!!*/
+    jointCmdPos[0] = motIniPoCreep[0] - jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[1] = motIniPoCreep[1] + jo_ang[0][0] + jo_ang[0][1];
+    jointCmdPos[2] = motIniPoCreep[2] - jo_ang[0][2];
+    jointCmdPos[3] = motIniPoCreep[3] - jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[4] = motIniPoCreep[4] + jo_ang[1][0] - jo_ang[1][1];
+    jointCmdPos[5] = motIniPoCreep[5] + jo_ang[1][2];
+    jointCmdPos[6] = motIniPoCreep[6] + jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[7] = motIniPoCreep[7] - jo_ang[3][0] - jo_ang[3][1];
+    jointCmdPos[8] = motIniPoCreep[8] + jo_ang[3][2];
+    jointCmdPos[9] = motIniPoCreep[9] + jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[10] = motIniPoCreep[10] - jo_ang[2][0] - jo_ang[2][1];
+    jointCmdPos[11] = motIniPoCreep[11] - jo_ang[2][2];
 }
 
 void MotionControl::standing2creeping()
@@ -706,55 +735,6 @@ void MotionControl::standing2creeping()
 void MotionControl::creeping2standing()
 {
 
-}
-
-void MotionControl::imu()
-{
-    // static int ret;
-    // static int fd;
-
-    // char r_buf[1024];
-    // bzero(r_buf,1024);
-
-    // fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
-    // if(fd == -1)
-    // {
-    //     fprintf(stderr,"uart_open error\n");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // if(uart_set(fd,BAUD,8,'N',1) == -1)
-    // {
-    //     fprintf(stderr,"uart set failed!\n");
-    //     exit(EXIT_FAILURE);
-    // }
-
-	// FILE *fp;
-	// fp = fopen("Record.txt","w");
-    // while(1)
-    // {
-    //     ret = recv_data(fd,r_buf,44);
-    //     if(ret == -1)
-    //     {
-    //         fprintf(stderr,"uart read failed!\n");
-    //         exit(EXIT_FAILURE);
-    //     }
-	// 	for (int i=0;i<ret;i++) 
-    //     {
-    //         fprintf(fp,"%2X ",r_buf[i]);
-    //         yawVelocity = ParseData(r_buf[i]);
-    //     }
-    //     usleep(1000);
-    // }
-
-    // ret = uart_close(fd);
-    // if(ret == -1)
-    // {
-    //     fprintf(stderr,"uart_close error\n");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // exit(EXIT_SUCCESS);
 }
 
 

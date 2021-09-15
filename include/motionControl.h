@@ -17,7 +17,6 @@
 #include <Eigen/Sparse>
 #include <Eigen/SVD>
 #include <fstream>
-//#include <imu.h>
 
 using namespace std;
 using namespace Eigen;
@@ -34,18 +33,15 @@ class MotionControl
         Vector<float, 3> presentCoMVelocity;  // X, Y , alpha c in world cordinate
         Matrix<float, 4, 3> targetCoMPosition;  // X, Y , alpha in world cordinate
         float yawVelocity;   // yaw velocity from imu
-        float yawCreep;  // The command yaw of creeping gait
         Vector<bool, 4> stanceFlag;  // True, False: LF, RF, LH, RH
         Vector<float, 4> timePresentForSwing;
         float L1, L2, L3;  // The length of L
-        float L1_creep, L2_creep, L3_creep;  // The length of creeping legs
         float width, length;
         Matrix<float, 4, 2> shoulderPos;  // X-Y: LF, RF, LH, RH
         Matrix<float, 4, 3> stancePhaseStartPos;
         Matrix<float, 4, 3> stancePhaseEndPos;
         Matrix<float, 4, 3> legPresentPos;  // present X-Y-Z: LF, RF, LH, RH in Shoulder cordinate
         Matrix<float, 4, 3> legCmdPos;  // command X-Y-Z: LF, RF, LH, RH in Shoulder cordinate
-        Matrix<float, 4, 3> legCmdVia;  // The intermediate variables for legCmdPos calculation of creeping gait
         Matrix<float, 4, 3> leg2CoMPrePos;  // present X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Matrix<float, 4, 3> leg2CoMCmdPos;  // command X-Y-Z: LF, RF, LH, RH in CoM cordinate
         Vector<float, 12> joint_pre_pos;  // present joint angle 0-11
@@ -61,12 +57,32 @@ class MotionControl
         float jointCmdPosLast[12];
         float jointCmdVel[12];
         float motorTorque[1];
-        float motorInitPos[12];
+        float motorInitPos[12];   // init motor angle of quadruped state
         float pid_motortorque[12];
         float jacobian_motortorque[12]; //motor torque in VMC
         float motorCmdTorque[12];
-        
         bool initFlag;
+
+        // the parameters of creeping gait
+        float motIniPoCreep[12];    // init motor angle of creeping gait
+        float H_onestep;  // The height of one step
+        float Yaw_rad;      // The rad of yaw angle
+        float k1,k2,k3;
+        float L_diag;  // half of body diagonal size
+        float beta_diag, alpha_diag; // structural angle of the body
+        float v_body_x, v_body_y;    // the velocity of CoM
+        float v_leg[4][2];  // the velocity of 4 legs
+        float endPosition[4][2];  // the final feet position after one gait cycle
+        Matrix<float, 4, 3> initPosS2L;  // init position from Shoulder to Leg
+        Matrix<float, 4, 2> initPosC2L;  // init position from CoM to Leg
+        Matrix<float, 4, 2> initPosC2S;  // init position from CoM to Shoulder
+        float p_w2c[4][3];  // The relative position from world to CoM
+        float p_c2s[4][3];  // The relative position from CoM to Shoulder
+        float p_w2f[4][3];  // The relative position from world to leg
+        float yawCreep;  // The command yaw of creeping gait
+        float L1_creep, L2_creep, L3_creep;  // The length of creeping legs
+        Matrix<float, 4, 3> legCmdVia;  // The intermediate variables for legCmdPos calculation of creeping gait
+
         void setInitPos(Matrix<float, 4, 3> initPosition);
         void setCoMVel(Vector<float, 3> tCV);
         void nextStep();
@@ -80,8 +96,6 @@ class MotionControl
         void forwardKinematics();
         void jacobians();
         void vmc();
-        void imu();
         void pid();
         MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP);
-
 };
