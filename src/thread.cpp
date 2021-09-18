@@ -14,7 +14,7 @@
 #include <motionControl.h>
 #include <Eigen/Core>
 #include <js.h>
-//#include <imu.h>
+#include <imu.h>
 
 #define PI 3.1415926
 #define _JOYSTICK 1
@@ -95,55 +95,56 @@ void *thread1_func(void *data) // receive velocity data
 void *thread2_func(void *data) // send velocity & IMU data
 {
     struct timeval startTime2, endTime2;
+
+    fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
+    if(fd == -1)
+    {
+        fprintf(stderr,"uart_open error\n");
+        exit(EXIT_FAILURE);
+    }
+    
     while(1)
     {
         gettimeofday(&startTime2,NULL);
         
-        // /* imu start */
-        // char r_buf[1024];
-        // bzero(r_buf,1024);
+        /* imu start */
+        char r_buf[1024];
+        bzero(r_buf,1024);
 
-        // fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
-        // if(fd == -1)
-        // {
-        //     fprintf(stderr,"uart_open error\n");
-        //     exit(EXIT_FAILURE);
-        // }
+        if(uart_set(fd,BAUD,8,'N',1) == -1)
+        {
+            fprintf(stderr,"uart set failed!\n");
+            exit(EXIT_FAILURE);
+        }
 
-        // if(uart_set(fd,BAUD,8,'N',1) == -1)
-        // {
-        //     fprintf(stderr,"uart set failed!\n");
-        //     exit(EXIT_FAILURE);
-        // }
+        FILE *fp;
+        fp = fopen("Record.txt","w");
+        while(1)
+        {
+            ret = recv_data(fd,r_buf,44);
+            if(ret == -1)
+            {
+                fprintf(stderr,"uart read failed!\n");
+                exit(EXIT_FAILURE);
+            }
+            for (int i=0;i<ret;i++) {fprintf(fp,"%2X ",r_buf[i]);ParseData(r_buf[i]);}
+            usleep(500);
+        }
 
-        // FILE *fp;
-        // fp = fopen("Record.txt","w");
-        // while(1)
-        // {
-        //     ret = recv_data(fd,r_buf,44);
-        //     if(ret == -1)
-        //     {
-        //         fprintf(stderr,"uart read failed!\n");
-        //         exit(EXIT_FAILURE);
-        //     }
-        //     for (int i=0;i<ret;i++) {fprintf(fp,"%2X ",r_buf[i]);ParseData(r_buf[i]);}
-        //     usleep(1000);
-        // }
+        ret = uart_close(fd);
+        if(ret == -1)
+        {
+            fprintf(stderr,"uart_close error\n");
+            exit(EXIT_FAILURE);
+        }
 
-        // ret = uart_close(fd);
-        // if(ret == -1)
-        // {
-        //     fprintf(stderr,"uart_close error\n");
-        //     exit(EXIT_FAILURE);
-        // }
-
-        // exit(EXIT_SUCCESS);
-        // /* imu end */
+        exit(EXIT_SUCCESS);
+        /* imu end */
 
         gettimeofday(&endTime2,NULL);
         double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
         // cout<<"thread2: "<<timeUse<<endl;
-        usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
+        //usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
 }
 
@@ -181,7 +182,7 @@ void *thread3_func(void *data) // update robot state
         {
             mc.motorCmdTorque[joints] = mc.pid_motortorque[joints] + k * mc.jacobian_motortorque[joints];
         }
-        set_torque(mc.motorCmdTorque);
+        //set_torque(mc.motorCmdTorque);
         // cout << "present zitai :" << mc.presentCoMVelocity(0) <<" "<< mc.presentCoMVelocity(1) << " " << mc.presentCoMVelocity(2) << endl;
         // cout << "target zitai :"<<mc.targetCoMVelocity(0) <<" "<< mc.targetCoMVelocity(1) << " " << mc.targetCoMVelocity(2) << endl;
         // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
