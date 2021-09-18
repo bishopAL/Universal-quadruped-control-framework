@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include "thread.h"
 #include "motor.h"
-#include <iostream>
 #include <math.h>
 #include <CppLinuxSerial/SerialPort.hpp>
 #include <motionControl.h>
@@ -148,7 +147,6 @@ void *thread2_func(void *data) // send velocity & IMU data
     }
 }
 
-
 void *thread3_func(void *data) // update robot state
 {// Port init start
     set_port_baudrate_ID("/dev/ttyAMA0", 3000000, ID, num);
@@ -175,52 +173,25 @@ void *thread3_func(void *data) // update robot state
             mc.jointPresentPos(joints) = present_position[joints];
             mc.jointPresentVel(joints) = present_velocity[joints];
         }
+        mc.jacobians();
         mc.pid();
         mc.vmc();
         float k = 0.0;
-        // if (mc.stanceFlag[0] == 0)
-        // {
-        //     for(uint8_t joints=0; joints<3; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-        //     }
-        //     for(uint8_t joints=3; joints<9; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-        //     }
-        //     for(uint8_t joints=9; joints<12; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-        //     }
-        // }
-        // else
-        // {
-        //     for(uint8_t joints=0; joints<3; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-        //     }
-        //     for(uint8_t joints=3; joints<9; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = k * mc.pid_motortorque[joints] + (1 - k) * mc.jacobian_motortorque[joints];
-        //     }
-        //     for(uint8_t joints=9; joints<12; joints++)
-        //     {
-        //         mc.motorCmdTorque[joints] = mc.pid_motortorque[joints];
-        //     }
-        // }
         for(uint8_t joints=0; joints<12; joints++)
         {
             mc.motorCmdTorque[joints] = mc.pid_motortorque[joints] + k * mc.jacobian_motortorque[joints];
         }
-        
         set_torque(mc.motorCmdTorque);
         // cout << "present zitai :" << mc.presentCoMVelocity(0) <<" "<< mc.presentCoMVelocity(1) << " " << mc.presentCoMVelocity(2) << endl;
         // cout << "target zitai :"<<mc.targetCoMVelocity(0) <<" "<< mc.targetCoMVelocity(1) << " " << mc.targetCoMVelocity(2) << endl;
         // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
-         cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
-        
+        // cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
+        // cout <<"jacobian: "<< mc.jacobian_motortorque[0]<< " "<< mc.jacobian_motortorque[1] << " "<< mc.jacobian_motortorque[2]<< " "<< mc.jacobian_motortorque[3]<< " "<< mc.jacobian_motortorque[4]<< " "<< mc.jacobian_motortorque[5]<< " "<< mc.jacobian_motortorque[6]<< " "<< mc.jacobian_motortorque[7]<< " "<< mc.jacobian_motortorque[8]<< " "<< mc.jacobian_motortorque[9]<< " "<< mc.jacobian_motortorque[10]<< " "<< mc.jacobian_motortorque[11]<< endl;
+        // cout <<"pid: "<<mc.pid_motortorque[0]<<" "<<mc.pid_motortorque[1]<< " "<< mc.pid_motortorque[2]<< " "<< mc.pid_motortorque[3]<< " "<< mc.pid_motortorque[4]<< " "<< mc.pid_motortorque[5]<< " "<< mc.pid_motortorque[6]<< " "<< mc.pid_motortorque[7]<< " "<< mc.pid_motortorque[8]<< " "<< mc.pid_motortorque[9]<< " "<< mc.pid_motortorque[10]<< " "<< mc.pid_motortorque[11]<< endl;
 
-        // set_position(mc.jointCmdPos);
+        //set_position(mc.jointCmdPos);
+        //cout << "jointcmdpos: " << mc.jointCmdPos[1] << endl;
+        //cout << "legcmdpos: " << mc.legCmdPos.row(0) << endl;
 
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
@@ -228,22 +199,7 @@ void *thread3_func(void *data) // update robot state
         // ofstream f("data.txt", ios::app);
 	    // f<<mc.jointPresentPos(0)<<" "<<mc.jointPresentPos(1)<<" "<<mc.jointPresentPos(2)<<" "<<mc.jointPresentPos(3)<<" "<<mc.jointPresentPos(4)<<" "<<mc.jointPresentPos(5)<<" "<<mc.jointPresentPos(6)<<" "<<mc.jointPresentPos(7)<<" "<<mc.jointPresentPos(8)<<" "<<mc.jointPresentPos(9)<<" "<<mc.jointPresentPos(10)<<" "<<mc.jointPresentPos(11)<<endl;
         // f.close();
-        float angle[12] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        if (mc.joint_pre_pos(0) > PI/9 || mc.joint_pre_pos(0) < -PI/9 || mc.joint_pre_pos(3) > PI/9 || mc.joint_pre_pos(3) < -PI/9 || mc.joint_pre_pos(6) > PI/9 || mc.joint_pre_pos(6) < -PI/9 || mc.joint_pre_pos(9) > PI/9 || mc.joint_pre_pos(9) < -PI/9)
-        {
-            set_torque(angle);
-            break;
-        }
-        if (mc.joint_pre_pos(1) > PI/6 || mc.joint_pre_pos(1) < -PI*2/9 || mc.joint_pre_pos(4) > PI/6 || mc.joint_pre_pos(4) < -PI*2/9 || mc.joint_pre_pos(7) > PI/6 || mc.joint_pre_pos(7) < -PI*2/9 || mc.joint_pre_pos(10) > PI/6 || mc.joint_pre_pos(10) < -PI*2/9)
-        {
-            set_torque(angle);
-            break;
-        }
-        if (mc.joint_pre_pos(2) > PI/2 || mc.joint_pre_pos(2) < -PI/2 || mc.joint_pre_pos(5) > PI/2 || mc.joint_pre_pos(5) < -PI/2 || mc.joint_pre_pos(8) > PI/2 || mc.joint_pre_pos(8) < -PI/2 || mc.joint_pre_pos(11) > PI/2 || mc.joint_pre_pos(11) < -PI/2)
-        {
-            set_torque(angle);
-            break;
-        }
+    
         //cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
     }
@@ -258,6 +214,7 @@ void *thread4_func(void *data) // motion control, update goal position
 	tCV<< 0.0, 0.0, 0.0;
 	mc.setInitPos(initPos);
 	mc.setCoMVel(tCV);
+    mc.forwardKinematics();
     mc.inverseKinematics();
     mc.initFlag = true;
     usleep(3e6);
@@ -277,8 +234,7 @@ void *thread4_func(void *data) // motion control, update goal position
 
     // struct timeval startTime4, endTime4;
     // Matrix<float, 4, 3> initPos; 
-    // /* need to be changed !!!!!!! */
-	// initPos<< 3.0, 0.0, -225.83, 3.0, 0.0, -225.83, -20.0, 0.0, -243.83, -20.0, 0.0, -243.83;
+	// initPos<< -132.0, 112.0, -46.0, 132.0, 112.0, -46.0, -132.0, -112.0, -46.0, 132.0, -112.0, -46.0;
 	// Vector<float, 3> tCV;
 	// tCV<< 0.0, 0.0, 0.0;
 	// mc.setInitPos(initPos);
@@ -289,7 +245,7 @@ void *thread4_func(void *data) // motion control, update goal position
     // while(1)
     // {
     //     gettimeofday(&startTime4,NULL);
-    //     mc.creepingGait(50,0,0);
+    //     mc.creepingGait(30,0,0);
     //     mc.creepingIK();
     //     gettimeofday(&endTime4,NULL);
     //     double timeUse = 1000000*(endTime4.tv_sec - startTime4.tv_sec) + endTime4.tv_usec - startTime4.tv_usec;

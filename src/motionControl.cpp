@@ -4,6 +4,7 @@
 using namespace std;
 using namespace Eigen;
 
+
 MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
 {
     // The parameters for quadruped gait
@@ -22,20 +23,22 @@ MotionControl::MotionControl(float tP, float tFGP, Matrix<float, 4, 2> tFSP)
     shoulderPos << width/2, length/2, width/2, -length/2, -width/2, length/2, -width/2, -length/2;  // X-Y: LF, RF, LH, RH
 
     // The parameters for creeping gait
+    timeOneSwingPeriod = 0.5 * timeForGaitPeriod;
     L1_creep = 132.0;
     L2_creep = 112.0;
-    L3_creep = 20.0;   // unknown
-    H_onestep = 20.0;
+    L3_creep = 46.0; 
+    H_onestep = 15.0;
     k1 = 0.25;
     k2 = 0.50;
     k3 = 0.25;
-    initPosS2L << 112.0, 132.0, -20.0, 112.0, -132.0, -20.0, -112.0, 132.0, -20.0, -112.0, -132.0, -20.0;  //unknown z
-    initPosC2L << 198.0, 198.0, 198.0, -198.0, -198.0, 198.0, -198.0, -198.0;
-    initPosC2S << 86.0, 66.0, 86.0, -66.0, -86.0, 66.0, -86.0, -66.0;
+    initPosS2L << 112.0, -132.0, -46.0, 112.0, 132.0, -46.0, -112.0, -132.0, -46.0, -112.0, 132.0, -46.0;
+    initPosC2L << 198.0, -198.0, 198.0, 198.0, -198.0, -198.0, -198.0, 198.0;
+    initPosC2S << 86.0, -66.0, 86.0, 66.0, -86.0, -66.0, -86.0, 66.0;
     L_diag = sqrt(initPosC2L(0,0)*initPosC2L(0,0) + initPosC2L(0,1)*initPosC2L(0,1));
     beta_diag = atan(initPosC2L(0,0)/initPosC2L(0,1));
     alpha_diag = PI / 2 - beta_diag;
 }
+
 
 void MotionControl::setInitPos(Matrix<float, 4, 3> initPosition)
 {
@@ -132,17 +135,17 @@ void MotionControl::inverseKinematics()
     float b2[4] = {0};
     float c2[4] = {0};
     static int times = 0;
-    motorInitPos[0] = 0.6273;
-    motorInitPos[1] = 0.7547;
+    motorInitPos[0] = 0.5583;
+    motorInitPos[1] = 0.7317;
     motorInitPos[2] = 0.7854;
-    motorInitPos[3] = 0.678;
-    motorInitPos[4] = 0.8482;
+    motorInitPos[3] = 0.6412;
+    motorInitPos[4] = 0.8099;
     motorInitPos[5] = -0.7854;
-    motorInitPos[6] = 0.9081;
-    motorInitPos[7] = -0.517;
+    motorInitPos[6] = 0.8973;
+    motorInitPos[7] = -0.5554;
     motorInitPos[8] = -0.7854;
-    motorInitPos[9] = -0.0568;
-    motorInitPos[10] = -0.3989;
+    motorInitPos[9] = -0.3912;
+    motorInitPos[10] = -0.4434;
     motorInitPos[11] = 0.7854;
 
     if(times!=0)
@@ -250,16 +253,11 @@ void MotionControl::forwardKinematics()
         legPresentPos(leg_nums,0) = L2 * cos(joint_pres_pos[leg_nums][0]) * cos(joint_pres_pos[leg_nums][1] + joint_pres_pos[leg_nums][2]) + L1 * cos(joint_pres_pos[leg_nums][0]) * cos(joint_pres_pos[leg_nums][1]);
         legPresentPos(leg_nums,1) = L2 * sin(joint_pres_pos[leg_nums][0]) * cos(joint_pres_pos[leg_nums][1] + joint_pres_pos[leg_nums][2]) + L1 * sin(joint_pres_pos[leg_nums][0]) * cos(joint_pres_pos[leg_nums][1]);
         legPresentPos(leg_nums,2) = L2 * sin(joint_pres_pos[leg_nums][1] + joint_pres_pos[leg_nums][2]) + L1 * sin(joint_pres_pos[leg_nums][1]);
+        leg2CoMPrePos(leg_nums,0) = shoulderPos(leg_nums,1) + legPresentPos(leg_nums,2);
+        leg2CoMPrePos(leg_nums,1) = shoulderPos(leg_nums,0) + legPresentPos(leg_nums,1);
+        leg2CoMPrePos(leg_nums,2) = -legPresentPos(leg_nums,0);
+        
     }
-
-    for(int leg_num1 = 0; leg_num1 < 4; leg_num1++)
-    {
-        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
-        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
-        leg2CoMPrePos(leg_num1,0) = shoulderPos(leg_num1,1) + legPresentPos(leg_num1,2);
-    }
-
-
 }
 
 void MotionControl::jacobians()
@@ -312,9 +310,9 @@ void MotionControl::updateState()
 
 void MotionControl::vmc()
 {
-    float kx = 0.4;
-    float ky = 0.4;
-    // float kw = 0.2;
+    float kx = 0.6;
+    float ky = 1.2;
+    // float kw = 0.0;
     if (stanceFlag[0] == 0)
     {
         float xf= leg2CoMPrePos(0, 0);
@@ -335,24 +333,25 @@ void MotionControl::vmc()
                        jacobian(3 ,6), jacobian(3 ,7), jacobian(3 ,8);
         Vector<float, 3>temp_vel;
         temp_vel(0) = (jointPresentVel(9) - jointPresentVel(10))/2;
-        temp_vel(1) = (jointPresentVel(9) + jointPresentVel(10))/2;
+        temp_vel(1) = -(jointPresentVel(9) + jointPresentVel(10))/2;
         temp_vel(2) = -jointPresentVel(11);
         Vector<float, 3>temp_comvel;
-        temp_comvel = -temp_vel;
+        temp_comvel = -temp_Matrix*temp_vel;
         presentCoMVelocity[0] = temp_comvel(0);
         presentCoMVelocity[1] = temp_comvel(1);
+        cout << "vel:"<<temp_comvel.transpose()<<endl;
         float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
         float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
         // float Fx = 0.0;
         // float Fy = 0.0;
-        float tao_z = 0.0;
+        float tao_z = -0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
         double u=0.7;
         double k=2;
         a << 1, 0, 0, 1, 0, 0, 
             0, 1, 0, 0, 1, 0, 
-            1, 1, -sqrt(2)*u/k, 0, 0, 0, 
+            -1, -1, -sqrt(2)*u/k, 0, 0, 0, 
             0, 0, 0, 1, 1, -sqrt(2)*u/k;
         b << Fx, Fy, 0, 0;
     }
@@ -376,24 +375,25 @@ void MotionControl::vmc()
                        jacobian(2 ,6), jacobian(2 ,7), jacobian(2 ,8);
         Vector<float, 3>temp_vel;
         temp_vel(0) = (jointPresentVel(6) - jointPresentVel(7))/2;
-        temp_vel(1) = (jointPresentVel(6) + jointPresentVel(7))/2;
-        temp_vel(2) = -jointPresentVel(8);
+        temp_vel(1) = -(jointPresentVel(6) + jointPresentVel(7))/2;
+        temp_vel(2) = jointPresentVel(8);
         Vector<float, 3>temp_comvel;
-        temp_comvel = -temp_vel;
+        temp_comvel = -temp_Matrix*temp_vel;
         presentCoMVelocity[0] = temp_comvel(0);
         presentCoMVelocity[1] = temp_comvel(1);
+        cout << "vel:"<<temp_comvel.transpose()<<endl;
         float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
         float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
         // float Fx = 0.0;
         // float Fy = 0.0;
-        float tao_z = 0.0;
+        float tao_z = -0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
         double u=0.7;
         double k=2;
         a << 1, 0, 0, 1, 0, 0, 
             0, 1, 0, 0, 1, 0, 
-            1, 1, -sqrt(2)*u/k, 0, 0, 0, 
+            -1, -1, -sqrt(2)*u/k, 0, 0, 0, 
             0, 0, 0, 1, 1, -sqrt(2)*u/k;
         b << Fx, Fy, 0, 0;
     }
@@ -426,7 +426,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        cout<<"stance left: "<<temp_Force<<endl;
+        // cout<<"stance left: "<<temp_Force << endl;
         jacobian_torque.head(3) = temp_torque.head(3);
         jacobian_torque.tail(3) = temp_torque.tail(3);
         jacobian_torque.segment(3, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -444,7 +444,8 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        cout<<"stance right: "<<temp_Force << endl;
+        // cout<<"stance right: "<<temp_Force << endl;
+
         jacobian_torque.head(3) << 0.0, 0.0, 0.0;
         jacobian_torque.tail(3) << 0.0, 0.0, 0.0;
         jacobian_torque.segment(3, 6) = temp_torque;
@@ -519,6 +520,7 @@ void MotionControl::pid()
 // creeping gait generated by X,Y,yaw from via points(position planning, independent part)
 void MotionControl::creepingGait(float X_tar, float Y_tar, float Yaw_tar) 
 {
+
     // some structural calculation
     Yaw_rad = Yaw_tar * PI / 180.0;
     endPosition[0][0] = X_tar + L_diag*sin(beta_diag - Yaw_rad);
@@ -655,6 +657,8 @@ void MotionControl::creepingGait(float X_tar, float Y_tar, float Yaw_tar)
         }
     }
 
+    cout << "trajectory: " << p_w2f[0][0] << ", " << p_w2f[0][1] << ", " << p_w2f[0][2] << endl;
+
     timePresent += timePeriod;
 
     if (abs(timePresent - timeForGaitPeriod - timePeriod) < 1e-4)
@@ -670,18 +674,18 @@ void MotionControl::creepingIK()
     float M_IK[4], N_IK[4];
 
     // creeping gait motor init angle
-    // motIniPoCreep[0] = ;
-    // motIniPoCreep[1] = ;
-    // motIniPoCreep[2] = ;
-    // motIniPoCreep[3] = ;
-    // motIniPoCreep[4] = ;
-    // motIniPoCreep[5] = ;
-    // motIniPoCreep[6] = ;
-    // motIniPoCreep[7] = ;
-    // motIniPoCreep[8] = ;
-    // motIniPoCreep[9] = ;
-    // motIniPoCreep[10] = ;
-    // motIniPoCreep[11] = ;
+    motIniPoCreep[0] = -0.9296;
+    motIniPoCreep[1] = 2.3531;
+    motIniPoCreep[2] = -0.7854;
+    motIniPoCreep[3] = 2.1721;
+    motIniPoCreep[4] = -0.8131;
+    motIniPoCreep[5] = 0.7854;
+    motIniPoCreep[6] = -0.7517;
+    motIniPoCreep[7] = 0.9295;
+    motIniPoCreep[8] = -2.3562;
+    motIniPoCreep[9] = 1.3729;
+    motIniPoCreep[10] = -2.0111;
+    motIniPoCreep[11] = 2.3562;
 
     // intermediate transfer
     legCmdPos(0,0) = - legCmdVia(0,1);
