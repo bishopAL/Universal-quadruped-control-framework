@@ -1,3 +1,4 @@
+#include <iostream>
 #include <limits.h>
 #include <pthread.h>
 #include <sched.h>
@@ -5,7 +6,6 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <iostream>
 #include <unistd.h>
 #include "thread.h"
 #include "motor.h"
@@ -95,6 +95,7 @@ void *thread1_func(void *data) // receive velocity data
 void *thread2_func(void *data) // send velocity & IMU data
 {
     struct timeval startTime2, endTime2;
+    int i = 0;
 
     fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
     if(fd == -1)
@@ -102,11 +103,18 @@ void *thread2_func(void *data) // send velocity & IMU data
         fprintf(stderr,"uart_open error\n");
         exit(EXIT_FAILURE);
     }
-    
+
     while(1)
     {
+        i+=1;
+        // cout << i << endl;
         gettimeofday(&startTime2,NULL);
         
+    //    SerialPort serialPort("/dev/ttyUSB0", BaudRate::B_9600);
+	//    // Use SerialPort serialPort("/dev/ttyACM0", 13000); instead if you want to provide a custom baud rate
+	//    serialPort.SetTimeout(100); // Block when reading until any data is received
+	//    serialPort.Open();
+   
         /* imu start */
         char r_buf[1024];
         bzero(r_buf,1024);
@@ -117,17 +125,24 @@ void *thread2_func(void *data) // send velocity & IMU data
             exit(EXIT_FAILURE);
         }
 
-        FILE *fp;
-        fp = fopen("Record.txt","w");
+        // FILE *fp;
+        // fp = fopen("Record.txt","w");
         while(1)
         {
+            // cout<<"s3"<<endl;
             ret = recv_data(fd,r_buf,44);
+            // cout<<"s4"<<endl;
             if(ret == -1)
             {
                 fprintf(stderr,"uart read failed!\n");
-                exit(EXIT_FAILURE);
+                break;
             }
-            for (int i=0;i<ret;i++) {fprintf(fp,"%2X ",r_buf[i]);ParseData(r_buf[i]);}
+            for (int i=0;i<ret;i++) 
+            {
+                //fprintf(fp,"%2X ",r_buf[i]);
+                ParseData(r_buf[i]);
+
+            }
             usleep(500);
         }
 
@@ -138,13 +153,14 @@ void *thread2_func(void *data) // send velocity & IMU data
             exit(EXIT_FAILURE);
         }
 
-        exit(EXIT_SUCCESS);
+        //exit(EXIT_SUCCESS);
         /* imu end */
+        
 
         gettimeofday(&endTime2,NULL);
         double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
         // cout<<"thread2: "<<timeUse<<endl;
-        //usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
+        // usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
 }
 
@@ -168,12 +184,12 @@ void *thread3_func(void *data) // update robot state
 		// get_torque(present_torque);
         get_position(present_position);
         get_velocity(present_velocity);
-        // mc.imu();
-        for(uint8_t joints=0; joints<12; joints++)
+        for(int joints=0; joints<12; joints++)
         {
             mc.jointPresentPos(joints) = present_position[joints];
             mc.jointPresentVel(joints) = present_velocity[joints];
         }
+
         mc.jacobians();
         mc.pid();
         mc.vmc();
@@ -182,12 +198,13 @@ void *thread3_func(void *data) // update robot state
         {
             mc.motorCmdTorque[joints] = mc.pid_motortorque[joints] + k * mc.jacobian_motortorque[joints];
         }
-        //set_torque(mc.motorCmdTorque);
+        set_torque(mc.motorCmdTorque);
+
         // cout << "present zitai :" << mc.presentCoMVelocity(0) <<" "<< mc.presentCoMVelocity(1) << " " << mc.presentCoMVelocity(2) << endl;
         // cout << "target zitai :"<<mc.targetCoMVelocity(0) <<" "<< mc.targetCoMVelocity(1) << " " << mc.targetCoMVelocity(2) << endl;
         // cout<<"jointPresentPos: "<<mc.jointPresentPos.transpose()<<endl;
         // cout<<"jointPresentVel: "<<mc.jointPresentVel.transpose()<<endl;
-        // cout <<"jacobian: "<< mc.jacobian_motortorque[0]<< " "<< mc.jacobian_motortorque[1] << " "<< mc.jacobian_motortorque[2]<< " "<< mc.jacobian_motortorque[3]<< " "<< mc.jacobian_motortorque[4]<< " "<< mc.jacobian_motortorque[5]<< " "<< mc.jacobian_motortorque[6]<< " "<< mc.jacobian_motortorque[7]<< " "<< mc.jacobian_motortorque[8]<< " "<< mc.jacobian_motortorque[9]<< " "<< mc.jacobian_motortorque[10]<< " "<< mc.jacobian_motortorque[11]<< endl;
+        // cout <<"vmc: "<< mc.jacobian_motortorque[0]<< " "<< mc.jacobian_motortorque[1] << " "<< mc.jacobian_motortorque[2]<< " "<< mc.jacobian_motortorque[3]<< " "<< mc.jacobian_motortorque[4]<< " "<< mc.jacobian_motortorque[5]<< " "<< mc.jacobian_motortorque[6]<< " "<< mc.jacobian_motortorque[7]<< " "<< mc.jacobian_motortorque[8]<< " "<< mc.jacobian_motortorque[9]<< " "<< mc.jacobian_motortorque[10]<< " "<< mc.jacobian_motortorque[11]<< endl;
         // cout <<"pid: "<<mc.pid_motortorque[0]<<" "<<mc.pid_motortorque[1]<< " "<< mc.pid_motortorque[2]<< " "<< mc.pid_motortorque[3]<< " "<< mc.pid_motortorque[4]<< " "<< mc.pid_motortorque[5]<< " "<< mc.pid_motortorque[6]<< " "<< mc.pid_motortorque[7]<< " "<< mc.pid_motortorque[8]<< " "<< mc.pid_motortorque[9]<< " "<< mc.pid_motortorque[10]<< " "<< mc.pid_motortorque[11]<< endl;
 
         //set_position(mc.jointCmdPos);
@@ -197,9 +214,9 @@ void *thread3_func(void *data) // update robot state
         gettimeofday(&endTime3,NULL);
         double timeUse = 1000000*(endTime3.tv_sec - startTime3.tv_sec) + endTime3.tv_usec - startTime3.tv_usec;  // us
 
-        // ofstream f("data.txt", ios::app);
-	    // f<<mc.jointPresentPos(0)<<" "<<mc.jointPresentPos(1)<<" "<<mc.jointPresentPos(2)<<" "<<mc.jointPresentPos(3)<<" "<<mc.jointPresentPos(4)<<" "<<mc.jointPresentPos(5)<<" "<<mc.jointPresentPos(6)<<" "<<mc.jointPresentPos(7)<<" "<<mc.jointPresentPos(8)<<" "<<mc.jointPresentPos(9)<<" "<<mc.jointPresentPos(10)<<" "<<mc.jointPresentPos(11)<<endl;
-        // f.close();
+        ofstream f("data.txt", ios::app);
+	    f<<mc.presentCoMVelocity(0)<<" "<<mc.presentCoMVelocity(1)<<" "<<mc.presentCoMVelocity(2)<<endl;
+        f.close();
     
         //cout<<"thread3: "<<temp_motorCmdTorque.transpose()<<endl;
         usleep(1/loopRate3*1e6 - (double)(timeUse) - 10); // Time for one period: 1/loopRate3*1e6 (us)
@@ -257,8 +274,8 @@ void *thread4_func(void *data) // motion control, update goal position
 
 void thread_init()
 {
-    struct sched_param param;
-    pthread_attr_t attr;
+    struct sched_param param1, param2, param3, param4;
+    pthread_attr_t attr1, attr2, attr3, attr4;
     pthread_t thread1 ,thread2 ,thread3, thread4;
     int ret;
 
@@ -271,104 +288,178 @@ void thread_init()
         exit(-2);
     }
     /* 2. Initialize pthread attributes (default values) */
-    ret = pthread_attr_init(&attr);
+    ret = pthread_attr_init(&attr1);
+    if (ret) {
+        printf("init pthread attributes failed\n");
+        goto out;
+    }
+    ret = pthread_attr_init(&attr2);
+    if (ret) {
+        printf("init pthread attributes failed\n");
+        goto out;
+    }
+    ret = pthread_attr_init(&attr3);
+    if (ret) {
+        printf("init pthread attributes failed\n");
+        goto out;
+    }
+    ret = pthread_attr_init(&attr4);
     if (ret) {
         printf("init pthread attributes failed\n");
         goto out;
     }
  
     /* 3. Set a specific stack size  */
-    ret = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
+    ret = pthread_attr_setstacksize(&attr1, PTHREAD_STACK_MIN);
+    if (ret) {
+        printf("pthread setstacksize failed\n");
+        goto out;
+    }
+    ret = pthread_attr_setstacksize(&attr2, PTHREAD_STACK_MIN);
+    if (ret) {
+        printf("pthread setstacksize failed\n");
+        goto out;
+    }
+    ret = pthread_attr_setstacksize(&attr3, PTHREAD_STACK_MIN);
+    if (ret) {
+        printf("pthread setstacksize failed\n");
+        goto out;
+    }
+    ret = pthread_attr_setstacksize(&attr4, PTHREAD_STACK_MIN);
     if (ret) {
         printf("pthread setstacksize failed\n");
         goto out;
     }
  
     /*4. Set scheduler policy and priority of pthread */
-    ret = pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    ret = pthread_attr_setschedpolicy(&attr1, SCHED_FIFO);
     if (ret) {
         printf("pthread setschedpolicy failed\n");
         goto out;
     }
-    param.sched_priority = 20;
-    ret = pthread_attr_setschedparam(&attr, &param);
+    ret = pthread_attr_setschedpolicy(&attr2, SCHED_FIFO);
+    if (ret) {
+        printf("pthread setschedpolicy failed\n");
+        goto out;
+    }
+    ret = pthread_attr_setschedpolicy(&attr3, SCHED_FIFO);
+    if (ret) {
+        printf("pthread setschedpolicy failed\n");
+        goto out;
+    }
+    ret = pthread_attr_setschedpolicy(&attr4, SCHED_FIFO);
+    if (ret) {
+        printf("pthread setschedpolicy failed\n");
+        goto out;
+    }
+    
+    param1.sched_priority = 20;
+    param2.sched_priority = 1;
+    param3.sched_priority = 20;
+    param4.sched_priority = 20;
+
+    ret = pthread_attr_setschedparam(&attr1, &param1);
     if (ret) {
             printf("pthread setschedparam failed\n");
             goto out;
     }
+    ret = pthread_attr_setschedparam(&attr2, &param2);
+    if (ret) {
+            printf("pthread setschedparam failed\n");
+            goto out;
+    }
+    ret = pthread_attr_setschedparam(&attr3, &param3);
+    if (ret) {
+            printf("pthread setschedparam failed\n");
+            goto out;
+    }
+    ret = pthread_attr_setschedparam(&attr4, &param4);
+    if (ret) {
+            printf("pthread setschedparam failed\n");
+            goto out;
+    }
+
     /*5. Use scheduling parameters of attr */
-        ret = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
-        if (ret) {
-                printf("pthread setinheritsched failed\n");
-                goto out;
-        }
+    ret = pthread_attr_setinheritsched(&attr1, PTHREAD_EXPLICIT_SCHED);
+    if (ret) {
+            printf("pthread setinheritsched failed\n");
+            goto out;
+    }
+    ret = pthread_attr_setinheritsched(&attr2, PTHREAD_EXPLICIT_SCHED);
+    if (ret) {
+            printf("pthread setinheritsched failed\n");
+            goto out;
+    }
+    ret = pthread_attr_setinheritsched(&attr3, PTHREAD_EXPLICIT_SCHED);
+    if (ret) {
+            printf("pthread setinheritsched failed\n");
+            goto out;
+    }
+    ret = pthread_attr_setinheritsched(&attr4, PTHREAD_EXPLICIT_SCHED);
+    if (ret) {
+            printf("pthread setinheritsched failed\n");
+            goto out;
+    }
  
     /*6. Create a pthread with specified attributes */
-        #ifdef THREAD1_ENABLE
-        ret = pthread_create(&thread1, &attr, thread1_func, NULL);
-        if (ret) {
-                printf("create pthread1 failed\n");
-                goto out;
-        }
-        
-        #endif
+    #ifdef THREAD1_ENABLE
+    ret = pthread_create(&thread1, &attr1, thread1_func, NULL);
+    if (ret) {
+            printf("create pthread1 failed\n");
+            goto out;
+    }
+    #endif
 
-        #ifdef THREAD2_ENABLE
-        ret = pthread_create(&thread2, &attr, thread2_func, NULL);
-        if (ret) {
-                printf("create pthread2 failed\n");
-                goto out;
-        }
-        #endif
+    #ifdef THREAD2_ENABLE
+    ret = pthread_create(&thread2, &attr2, thread2_func, NULL);
+    if (ret) {
+            printf("create pthread2 failed\n");
+            goto out;
+    }
+    #endif
 
-        #ifdef THREAD3_ENABLE
-        ret = pthread_create(&thread3, &attr, thread3_func, NULL);
-        if (ret) {
-                printf("create pthread3 failed\n");
-                goto out;
-        }
-        #endif
+    #ifdef THREAD3_ENABLE
+    ret = pthread_create(&thread3, &attr3, thread3_func, NULL);
+    if (ret) {
+            printf("create pthread3 failed\n");
+            goto out;
+    }
+    #endif
 
-        #ifdef THREAD4_ENABLE
-        ret = pthread_create(&thread4, &attr, thread4_func, NULL);
-        if (ret) {
-                printf("create pthread4 failed\n");
-                goto out;
-        }
-        #endif
+    #ifdef THREAD4_ENABLE
+    ret = pthread_create(&thread4, &attr4, thread4_func, NULL);
+    if (ret) {
+            printf("create pthread4 failed\n");
+            goto out;
+    }
+    #endif
 
-        #ifdef THREAD1_ENABLE
-        ret = pthread_join(thread1, NULL);
-        if (ret)
-            printf("join pthread1 failed: %m\n");
-        #endif
+    #ifdef THREAD1_ENABLE
+    ret = pthread_join(thread1, NULL);
+    if (ret)
+        printf("join pthread1 failed: %m\n");
+    #endif
 
-        #ifdef THREAD2_ENABLE
-        ret = pthread_join(thread2, NULL);
-        if (ret)
-            printf("join pthread2 failed: %m\n");
-        #endif
+    #ifdef THREAD2_ENABLE
+    ret = pthread_join(thread2, NULL);
+    if (ret)
+        printf("join pthread2 failed: %m\n");
+    #endif
 
-        #ifdef THREAD3_ENABLE
-        ret = pthread_join(thread3, NULL);
-        if (ret)
-            printf("join pthread3 failed: %m\n");
-        #endif
+    #ifdef THREAD3_ENABLE
+    ret = pthread_join(thread3, NULL);
+    if (ret)
+        printf("join pthread3 failed: %m\n");
+    #endif
 
-        #ifdef THREAD4_ENABLE
-        ret = pthread_join(thread4, NULL);
-        if (ret)
-            printf("join pthread4 failed: %m\n");
-        #endif
+    #ifdef THREAD4_ENABLE
+    ret = pthread_join(thread4, NULL);
+    if (ret)
+        printf("join pthread4 failed: %m\n");
+    #endif
  
     /*7. Join the thread and wait until it is done */
-        
-
-        
-
-        
-
-        
+    
 out:
     ret;
 

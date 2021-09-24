@@ -135,17 +135,17 @@ void MotionControl::inverseKinematics()
     float b2[4] = {0};
     float c2[4] = {0};
     static int times = 0;
-    motorInitPos[0] = 0.5583;
-    motorInitPos[1] = 0.7317;
+    motorInitPos[0] = 0.5507;
+    motorInitPos[1] = 0.6734;
     motorInitPos[2] = 0.7854;
-    motorInitPos[3] = 0.6412;
-    motorInitPos[4] = 0.8099;
+    motorInitPos[3] = -0.1412;
+    motorInitPos[4] = 0.0245;
     motorInitPos[5] = -0.7854;
-    motorInitPos[6] = 0.8973;
-    motorInitPos[7] = -0.5554;
+    motorInitPos[6] = 0.928;
+    motorInitPos[7] = -0.4434;
     motorInitPos[8] = -0.7854;
-    motorInitPos[9] = -0.3912;
-    motorInitPos[10] = -0.4434;
+    motorInitPos[9] = -0.1366;
+    motorInitPos[10] = -0.3253;
     motorInitPos[11] = 0.7854;
 
     if(times!=0)
@@ -262,45 +262,45 @@ void MotionControl::forwardKinematics()
 
 void MotionControl::jacobians()
 {
-    jacobian(0 ,0) = -L3 * sin(joint_pre_pos[0]) * cos(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * sin(joint_pre_pos[0]) * cos(joint_pre_pos[1]);
-    jacobian(0 ,1) =  L3 * cos(joint_pre_pos[0]) * cos(joint_pre_pos[1] + joint_pre_pos[2]) + L1 * cos(joint_pre_pos[0]) * cos(joint_pre_pos[1]);
+    jacobian(0 ,0) = -L2 * sin(joint_pre_pos[0]) * cos(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * sin(joint_pre_pos[0]) * cos(joint_pre_pos[1]);
+    jacobian(0 ,1) =  L2 * cos(joint_pre_pos[0]) * cos(joint_pre_pos[1] + joint_pre_pos[2]) + L1 * cos(joint_pre_pos[0]) * cos(joint_pre_pos[1]);
     jacobian(0 ,2) = 0;
-    jacobian(0 ,3) = -L3 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1]);
-    jacobian(0 ,4) = -L3 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1]);
-    jacobian(0 ,5) = L3 * cos(joint_pre_pos[1] + joint_pre_pos[2]) + L1 * cos(joint_pre_pos[1]);
-    jacobian(0 ,6) = -L3 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]);
-    jacobian(0 ,7) = -L3 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]);
-    jacobian(0 ,8) = L3 * cos(joint_pre_pos[1] + joint_pre_pos[2]);
+    jacobian(0 ,3) = -L2 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1]);
+    jacobian(0 ,4) = -L2 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]) - L1 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1]);
+    jacobian(0 ,5) = L2 * cos(joint_pre_pos[1] + joint_pre_pos[2]) + L1 * cos(joint_pre_pos[1]);
+    jacobian(0 ,6) = -L2 * cos(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]);
+    jacobian(0 ,7) = -L2 * sin(joint_pre_pos[0]) * sin(joint_pre_pos[1] + joint_pre_pos[2]);
+    jacobian(0 ,8) = L2 * cos(joint_pre_pos[1] + joint_pre_pos[2]);
 
-    jacobian(1 ,0)= -L3 * sin(jointPresentPos[3]) * cos(jointPresentPos[4] + jointPresentPos[5]) - L1 * sin(jointPresentPos[3]) * cos(jointPresentPos[4]);
-    jacobian(1 ,1) =  L3 * cos(jointPresentPos[3]) * cos(jointPresentPos[4] + jointPresentPos[5]) + L1 * cos(jointPresentPos[3]) * cos(jointPresentPos[4]);
+    jacobian(1 ,0)= -L2 * sin(joint_pre_pos[3]) * cos(joint_pre_pos[4] + joint_pre_pos[5]) - L1 * sin(joint_pre_pos[3]) * cos(joint_pre_pos[4]);
+    jacobian(1 ,1) =  L2 * cos(joint_pre_pos[3]) * cos(joint_pre_pos[4] + joint_pre_pos[5]) + L1 * cos(joint_pre_pos[3]) * cos(joint_pre_pos[4]);
     jacobian(1 ,2) = 0;
-    jacobian(1 ,3) = -L3 * cos(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]) - L1 * cos(jointPresentPos[3]) * sin(jointPresentPos[4]);
-    jacobian(1 ,4) = -L3 * sin(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]) - L1 * sin(jointPresentPos[3]) * sin(jointPresentPos[4]);
-    jacobian(1 ,5) = L3 * cos(jointPresentPos[4] + jointPresentPos[5]) + L1 * cos(jointPresentPos[4]);
-    jacobian(1 ,6) = -L3 * cos(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]);
-    jacobian(1 ,7) = -L3 * sin(jointPresentPos[3]) * sin(jointPresentPos[4] + jointPresentPos[5]);
-    jacobian(1 ,8) = L3 * cos(jointPresentPos[4] + jointPresentPos[5]);
+    jacobian(1 ,3) = -L2 * cos(joint_pre_pos[3]) * sin(joint_pre_pos[4] + joint_pre_pos[5]) - L1 * cos(joint_pre_pos[3]) * sin(joint_pre_pos[4]);
+    jacobian(1 ,4) = -L2 * sin(joint_pre_pos[3]) * sin(joint_pre_pos[4] + joint_pre_pos[5]) - L1 * sin(joint_pre_pos[3]) * sin(joint_pre_pos[4]);
+    jacobian(1 ,5) = L2 * cos(joint_pre_pos[4] + joint_pre_pos[5]) + L1 * cos(joint_pre_pos[4]);
+    jacobian(1 ,6) = -L2 * cos(joint_pre_pos[3]) * sin(joint_pre_pos[4] + joint_pre_pos[5]);
+    jacobian(1 ,7) = -L2 * sin(joint_pre_pos[3]) * sin(joint_pre_pos[4] + joint_pre_pos[5]);
+    jacobian(1 ,8) = L2 * cos(joint_pre_pos[4] + joint_pre_pos[5]);
 
-    jacobian(2 ,0)= -L3 * sin(jointPresentPos[6]) * cos(jointPresentPos[7] + jointPresentPos[8]) - L1 * sin(jointPresentPos[6]) * cos(jointPresentPos[7]);
-    jacobian(2 ,1) =  L3 * cos(jointPresentPos[6]) * cos(jointPresentPos[7] + jointPresentPos[8]) + L1 * cos(jointPresentPos[6]) * cos(jointPresentPos[7]);
+    jacobian(2 ,0)= -L2 * sin(joint_pre_pos[6]) * cos(joint_pre_pos[7] + joint_pre_pos[8]) - L1 * sin(joint_pre_pos[6]) * cos(joint_pre_pos[7]);
+    jacobian(2 ,1) =  L2 * cos(joint_pre_pos[6]) * cos(joint_pre_pos[7] + joint_pre_pos[8]) + L1 * cos(joint_pre_pos[6]) * cos(joint_pre_pos[7]);
     jacobian(2 ,2) = 0;
-    jacobian(2 ,3) = -L3 * cos(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]) - L1 * cos(jointPresentPos[6]) * sin(jointPresentPos[7]);
-    jacobian(2 ,4) = -L3 * sin(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]) - L1 * sin(jointPresentPos[6]) * sin(jointPresentPos[7]);
-    jacobian(2 ,5) = L3 * cos(jointPresentPos[7] + jointPresentPos[8]) + L1 * cos(jointPresentPos[7]);
-    jacobian(2 ,6) = -L3 * cos(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]);
-    jacobian(2 ,7) = -L3 * sin(jointPresentPos[6]) * sin(jointPresentPos[7] + jointPresentPos[8]);
-    jacobian(2 ,8) = L3 * cos(jointPresentPos[7] + jointPresentPos[8]);
+    jacobian(2 ,3) = -L2 * cos(joint_pre_pos[6]) * sin(joint_pre_pos[7] + joint_pre_pos[8]) - L1 * cos(joint_pre_pos[6]) * sin(joint_pre_pos[7]);
+    jacobian(2 ,4) = -L2 * sin(joint_pre_pos[6]) * sin(joint_pre_pos[7] + joint_pre_pos[8]) - L1 * sin(joint_pre_pos[6]) * sin(joint_pre_pos[7]);
+    jacobian(2 ,5) = L2 * cos(joint_pre_pos[7] + joint_pre_pos[8]) + L1 * cos(joint_pre_pos[7]);
+    jacobian(2 ,6) = -L2 * cos(joint_pre_pos[6]) * sin(joint_pre_pos[7] + joint_pre_pos[8]);
+    jacobian(2 ,7) = -L2 * sin(joint_pre_pos[6]) * sin(joint_pre_pos[7] + joint_pre_pos[8]);
+    jacobian(2 ,8) = L2 * cos(joint_pre_pos[7] + joint_pre_pos[8]);
 
-    jacobian(3, 0) = -L3 * sin(jointPresentPos[9]) * cos(jointPresentPos[10] + jointPresentPos[11]) - L1 * sin(jointPresentPos[9]) * cos(jointPresentPos[10]);
-    jacobian(3, 1) =  L3 * cos(jointPresentPos[9]) * cos(jointPresentPos[10] + jointPresentPos[11]) + L1 * cos(jointPresentPos[9]) * cos(jointPresentPos[10]);
+    jacobian(3, 0) = -L2 * sin(joint_pre_pos[9]) * cos(joint_pre_pos[10] + joint_pre_pos[11]) - L1 * sin(joint_pre_pos[9]) * cos(joint_pre_pos[10]);
+    jacobian(3, 1) =  L2 * cos(joint_pre_pos[9]) * cos(joint_pre_pos[10] + joint_pre_pos[11]) + L1 * cos(joint_pre_pos[9]) * cos(joint_pre_pos[10]);
     jacobian(3, 2) = 0;
-    jacobian(3, 3) = -L3 * cos(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]) - L1 * cos(jointPresentPos[9]) * sin(jointPresentPos[10]);
-    jacobian(3, 4) = -L3 * sin(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]) - L1 * sin(jointPresentPos[9]) * sin(jointPresentPos[10]);
-    jacobian(3, 5) = L3 * cos(jointPresentPos[10] + jointPresentPos[11]) + L1 * cos(jointPresentPos[10]);
-    jacobian(3, 6) = -L3 * cos(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]);
-    jacobian(3, 7) = -L3 * sin(jointPresentPos[9]) * sin(jointPresentPos[10] + jointPresentPos[11]);
-    jacobian(3, 8) = L3 * cos(jointPresentPos[10] + jointPresentPos[11]);
+    jacobian(3, 3) = -L2 * cos(joint_pre_pos[9]) * sin(joint_pre_pos[10] + joint_pre_pos[11]) - L1 * cos(joint_pre_pos[9]) * sin(joint_pre_pos[10]);
+    jacobian(3, 4) = -L2 * sin(joint_pre_pos[9]) * sin(joint_pre_pos[10] + joint_pre_pos[11]) - L1 * sin(joint_pre_pos[9]) * sin(joint_pre_pos[10]);
+    jacobian(3, 5) = L2 * cos(joint_pre_pos[10] + joint_pre_pos[11]) + L1 * cos(joint_pre_pos[10]);
+    jacobian(3, 6) = -L2 * cos(joint_pre_pos[9]) * sin(joint_pre_pos[10] + joint_pre_pos[11]);
+    jacobian(3, 7) = -L2 * sin(joint_pre_pos[9]) * sin(joint_pre_pos[10] + joint_pre_pos[11]);
+    jacobian(3, 8) = L2 * cos(joint_pre_pos[10] + joint_pre_pos[11]);
 }
 
 void MotionControl::updateState()
@@ -310,8 +310,8 @@ void MotionControl::updateState()
 
 void MotionControl::vmc()
 {
-    float kx = 0.6;
-    float ky = 1.2;
+    float kx = 500.0;
+    float ky = 500.0;
     // float kw = 0.0;
     if (stanceFlag[0] == 0)
     {
@@ -323,7 +323,7 @@ void MotionControl::vmc()
         float zh= leg2CoMPrePos(3, 2);
         A << 1, 0, 0, 1, 0, 0,
              0, 1, 0, 0, 1, 0, 
-             0, 0, 1, 0, 0, 1, 
+             0, 0, 1, 0, 0, 1,
              0, -zf, yf, 0, -zh, yh, 
              zf, 0, -xf, zh, 0, -xh, 
              -yh, -xf, 0, yh, xh, 0;
@@ -336,17 +336,18 @@ void MotionControl::vmc()
         temp_vel(1) = -(jointPresentVel(9) + jointPresentVel(10))/2;
         temp_vel(2) = -jointPresentVel(11);
         Vector<float, 3>temp_comvel;
-        temp_comvel = -temp_Matrix*temp_vel;
+        temp_comvel = -temp_Matrix*temp_vel * 0.000001;
         presentCoMVelocity[0] = temp_comvel(0);
         presentCoMVelocity[1] = temp_comvel(1);
-        cout << "vel:"<<temp_comvel.transpose()<<endl;
+        // cout << "vel:"<<temp_comvel.transpose()<<endl;
         float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
         float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
         // float Fx = 0.0;
         // float Fy = 0.0;
-        float tao_z = -0.0;
+        float tao_z = 0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
+        // cout << "force: " <<  B.transpose() << endl;
         double u=0.7;
         double k=2;
         a << 1, 0, 0, 1, 0, 0, 
@@ -378,10 +379,10 @@ void MotionControl::vmc()
         temp_vel(1) = -(jointPresentVel(6) + jointPresentVel(7))/2;
         temp_vel(2) = jointPresentVel(8);
         Vector<float, 3>temp_comvel;
-        temp_comvel = -temp_Matrix*temp_vel;
+        temp_comvel = -temp_Matrix * temp_vel *  0.000001;
         presentCoMVelocity[0] = temp_comvel(0);
         presentCoMVelocity[1] = temp_comvel(1);
-        cout << "vel:"<<temp_comvel.transpose()<<endl;
+        // cout << "vel:"<<temp_comvel.transpose()<<endl;
         float Fx = kx * (targetCoMVelocity[0] - presentCoMVelocity[0]);
         float Fy = ky * (targetCoMVelocity[1] - presentCoMVelocity[1]);
         // float tao_z = kw * (presentCoMVelocity[2] - targetCoMVelocity[2]);
@@ -389,12 +390,13 @@ void MotionControl::vmc()
         // float Fy = 0.0;
         float tao_z = -0.0;
         B << Fx, Fy, 9.8 * 2.5, 0, 0, tao_z;
+        // cout << "force: " << B.transpose() << endl;
         double u=0.7;
         double k=2;
         a << 1, 0, 0, 1, 0, 0, 
             0, 1, 0, 0, 1, 0, 
-            -1, -1, -sqrt(2)*u/k, 0, 0, 0, 
-            0, 0, 0, 1, 1, -sqrt(2)*u/k;
+            1, -1, -sqrt(2)*u/k, 0, 0, 0, 
+            0, 0, 0, -1, 1, -sqrt(2)*u/k;
         b << Fx, Fy, 0, 0;
     }
     int m = 4;
@@ -412,6 +414,7 @@ void MotionControl::vmc()
     jacobian_Force = x.head(6);
     Vector<float, 6> temp_Force;
     temp_Force = x.head(6);
+    // cout << "force :" << (A * temp_Force).transpose() << endl;
     Matrix<float, 6, 6>jacobian_Matrix;
     Vector<float, 12>jacobian_torque;
     if (stanceFlag[0] == 0)
@@ -426,7 +429,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        // cout<<"stance left: "<<temp_Force << endl;
+        // cout<<"stance left: "<<temp_Force.transpose() << endl;
         jacobian_torque.head(3) = temp_torque.head(3);
         jacobian_torque.tail(3) = temp_torque.tail(3);
         jacobian_torque.segment(3, 6) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -444,7 +447,7 @@ void MotionControl::vmc()
         jacobian_Matrix.block(3,0,3,3) = MatrixXf::Zero(3, 3);
         Vector<float, 6> temp_torque;
         temp_torque = jacobian_Matrix * temp_Force;
-        // cout<<"stance right: "<<temp_Force << endl;
+        // cout<<"stance right: "<<temp_Force.transpose() << endl;
 
         jacobian_torque.head(3) << 0.0, 0.0, 0.0;
         jacobian_torque.tail(3) << 0.0, 0.0, 0.0;
@@ -453,16 +456,19 @@ void MotionControl::vmc()
     jacobian_motortorque[0] = 0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
     jacobian_motortorque[1] = -0.5 * jacobian_torque(0) + 0.5 * jacobian_torque(1);
     jacobian_motortorque[2] = -jacobian_torque(2);
-    jacobian_motortorque[3] = 0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
-    jacobian_motortorque[4] = -0.5 * jacobian_torque(3) + 0.5 * jacobian_torque(4);
-    jacobian_motortorque[5] = -jacobian_torque(5);
-    jacobian_motortorque[6] = 0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
-    jacobian_motortorque[7] = -0.5 * jacobian_torque(6) + 0.5 * jacobian_torque(7);
-    jacobian_motortorque[8] = -jacobian_torque(8);
-    jacobian_motortorque[9] = 0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
-    jacobian_motortorque[10] = -0.5 * jacobian_torque(9) + 0.5 * jacobian_torque(10);
+    jacobian_motortorque[3] = 0.5 * jacobian_torque(3) - 0.5 * jacobian_torque(4);
+    jacobian_motortorque[4] = -0.5 * jacobian_torque(3) - 0.5 * jacobian_torque(4);
+    jacobian_motortorque[5] = jacobian_torque(5);
+    jacobian_motortorque[6] = 0.5 * jacobian_torque(6) - 0.5 * jacobian_torque(7);
+    jacobian_motortorque[7] = -0.5 * jacobian_torque(6) - 0.5 * jacobian_torque(7);
+    jacobian_motortorque[8] = jacobian_torque(8);
+    jacobian_motortorque[9] = 0.5 * jacobian_torque(9) - 0.5 * jacobian_torque(10);
+    jacobian_motortorque[10] = -0.5 * jacobian_torque(9) - 0.5 * jacobian_torque(10);
     jacobian_motortorque[11] = -jacobian_torque(11);
-       
+    for (int i = 0 ;i <12 ; i++)
+    {
+        jacobian_motortorque[i] = 0.000001 * jacobian_motortorque[i];
+    }
 }
 
 void MotionControl::setInitial()
