@@ -28,7 +28,7 @@ using namespace std;
 
 struct timeval startTime, endTime;
 float loopRate1 = 10; //receive velocity data 10 Hz
-float loopRate2 = 100; // send velocity & IMU data 10 Hz
+float loopRate2 = 300; // send velocity & IMU data 10 Hz
 float loopRate3 = 100; // update robot state 100 Hz
 float loopRate4 = 100; // motion control 100 Hz
 
@@ -95,7 +95,7 @@ void *thread1_func(void *data) // receive velocity data
 void *thread2_func(void *data) // send velocity & IMU data
 {
     struct timeval startTime2, endTime2;
-    int i = 0;
+    float temp_imu;
 
     fd = uart_open(fd,"/dev/ttyUSB0");/*串口号/dev/ttySn,USB口号/dev/ttyUSBn */ 
     if(fd == -1)
@@ -106,8 +106,6 @@ void *thread2_func(void *data) // send velocity & IMU data
 
     while(1)
     {
-        i+=1;
-        // cout << i << endl;
         gettimeofday(&startTime2,NULL);
    
         /* imu start */
@@ -124,9 +122,7 @@ void *thread2_func(void *data) // send velocity & IMU data
         // fp = fopen("Record.txt","w");
         while(1)
         {
-            // cout<<"s3"<<endl;
             ret = recv_data(fd,r_buf,44);
-            // cout<<"s4"<<endl;
             if(ret == -1)
             {
                 fprintf(stderr,"uart read failed!\n");
@@ -135,10 +131,15 @@ void *thread2_func(void *data) // send velocity & IMU data
             for (int i=0;i<ret;i++) 
             {
                 //fprintf(fp,"%2X ",r_buf[i]);
-                ParseData(r_buf[i]);
-
+                float temp;
+                temp = ParseData(r_buf[i]);
+                if(temp<10000) 
+                {
+                mc.z_pre_vel = temp;
+                cout << "z_pre_vel: " << mc.z_pre_vel << endl;
+                }
             }
-            usleep(500);
+            // usleep(500);
         }
 
         ret = uart_close(fd);
@@ -154,8 +155,8 @@ void *thread2_func(void *data) // send velocity & IMU data
 
         gettimeofday(&endTime2,NULL);
         double timeUse = 1000000*(endTime2.tv_sec - startTime2.tv_sec) + endTime2.tv_usec - startTime2.tv_usec;
-        // cout<<"thread2: "<<timeUse<<endl;
-        // usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
+        cout<<"thread2: "<<timeUse<<endl;
+        usleep(1/loopRate2*1e6 - (double)(timeUse) - 10); // /* 1e4 / 1e6 = 0.01s */
     }
 }
 

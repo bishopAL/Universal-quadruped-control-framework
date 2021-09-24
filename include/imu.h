@@ -139,9 +139,9 @@ int recv_data(int fd, char* recv_buffer,int length)
 	return length;
 }
 
-void ParseData(char chr)
+float ParseData(char chr)
 {
-    float a[3],w[3],Angle[3],h[3];
+    static float a[3],w[3],Angle[3],h[3];
     static char chrBuf[100];
     static unsigned char chrCnt=0;
     signed short sData[4];
@@ -149,9 +149,16 @@ void ParseData(char chr)
     
     time_t now;
     chrBuf[chrCnt++]=chr;
-    if (chrCnt<11) return;
+
+    if (chrCnt<11) 
+      return 15000.0;
     
-    if ((chrBuf[0]!=0x55)||((chrBuf[1]&0x50)!=0x50)) {printf("Error:%x %x\r\n",chrBuf[0],chrBuf[1]);memcpy(&chrBuf[0],&chrBuf[1],10);chrCnt--;return;}
+    if ((chrBuf[0]!=0x55)||((chrBuf[1]&0x50)!=0x50)) 
+    {
+      printf("Error:%x %x\r\n",chrBuf[0],chrBuf[1]);
+      memcpy(&chrBuf[0],&chrBuf[1],10);chrCnt--;
+      return 15000.0;
+    }
     
     memcpy(&sData[0],&chrBuf[2],8);
 		switch(chrBuf[1])
@@ -159,23 +166,24 @@ void ParseData(char chr)
 				case 0x51:
 					for (i=0;i<3;i++) a[i] = (float)sData[i]/32768.0*16.0;
 					time(&now);
-					printf("\r\nT:%s a:%6.3f %6.3f %6.3f ",asctime(localtime(&now)),a[0],a[1],a[2]);
+					//printf("\r\nT:%s a:%6.3f %6.3f %6.3f ",asctime(localtime(&now)),a[0],a[1],a[2]);
 					
 					break;
 				case 0x52:
 					for (i=0;i<3;i++) w[i] = (float)sData[i]/32768.0*2000.0;
-					printf("w:%7.3f %7.3f %7.3f ",w[0],w[1],w[2]);					
+					//printf("w:%7.3f %7.3f %7.3f ",w[0],w[1],w[2]);
 					break;
 				case 0x53:
 					for (i=0;i<3;i++) Angle[i] = (float)sData[i]/32768.0*180.0;
-					printf("A:%7.3f %7.3f %7.3f ",Angle[0],Angle[1],Angle[2]);
+					//printf("A:%7.3f %7.3f %7.3f ",Angle[0],Angle[1],Angle[2]);
 					break;
 				case 0x54:
 					for (i=0;i<3;i++) h[i] = (float)sData[i];
-					printf("h:%4.0f %4.0f %4.0f ",h[0],h[1],h[2]);
+					// printf("h:%4.0f %4.0f %4.0f ",h[0],h[1],h[2]);
 					
 					break;
-		}		
+		}	
+
 		chrCnt=0;
-		
+    return w[2];
 }

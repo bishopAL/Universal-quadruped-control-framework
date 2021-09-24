@@ -53,6 +53,7 @@ class MotionControl
         Vector<float, 6>B;        //VMC
         Matrix<float, 4, 6>a;     //VMC
         Vector<float, 4>b;        //VMC
+        float z_pre_vel;         // z present velocity from imu
         float jointCmdPos[12];  // command motor 0-11
         float jointCmdPosLast[12];
         float jointCmdVel[12];
