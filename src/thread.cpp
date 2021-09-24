@@ -109,11 +109,6 @@ void *thread2_func(void *data) // send velocity & IMU data
         i+=1;
         // cout << i << endl;
         gettimeofday(&startTime2,NULL);
-        
-    //    SerialPort serialPort("/dev/ttyUSB0", BaudRate::B_9600);
-	//    // Use SerialPort serialPort("/dev/ttyACM0", 13000); instead if you want to provide a custom baud rate
-	//    serialPort.SetTimeout(100); // Block when reading until any data is received
-	//    serialPort.Open();
    
         /* imu start */
         char r_buf[1024];
@@ -198,7 +193,7 @@ void *thread3_func(void *data) // update robot state
         {
             mc.motorCmdTorque[joints] = mc.pid_motortorque[joints] + k * mc.jacobian_motortorque[joints];
         }
-        set_torque(mc.motorCmdTorque);
+        // set_torque(mc.motorCmdTorque);
 
         // cout << "present zitai :" << mc.presentCoMVelocity(0) <<" "<< mc.presentCoMVelocity(1) << " " << mc.presentCoMVelocity(2) << endl;
         // cout << "target zitai :"<<mc.targetCoMVelocity(0) <<" "<< mc.targetCoMVelocity(1) << " " << mc.targetCoMVelocity(2) << endl;
